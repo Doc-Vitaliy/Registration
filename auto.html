@@ -162,7 +162,11 @@
 
         try {
             // Тут буде твоє посилання на Apps Script
-            const API_URL = "ТВОЄ_ПОСИЛАННЯ_DEPLOY";
+            const API_URL = localStorage.getItem('apps_script_url');
+
+            if (!API_URL) {
+                alert("Помилка: API посилання не знайдено! Поверніться на головну сторінку.");
+            }
             
             const response = await fetch(API_URL, {
                 method: 'POST',
@@ -183,32 +187,5 @@
         }
     }
 </script>
-<script>
-    // 1. Логіка ініціалізації API (як у ScanBox)
-    document.addEventListener("DOMContentLoaded", function() {
-        let API_URL = localStorage.getItem('apps_script_url');
-
-        if (!API_URL) {
-            API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
-            if (API_URL && API_URL.includes("script.google.com")) {
-                localStorage.setItem('apps_script_url', API_URL);
-                alert("API успішно збережено!");
-            } else if (API_URL) {
-                alert("Схоже, посилання некоректне. Спробуйте ще раз.");
-                localStorage.removeItem('apps_script_url');
-            }
-        }
-    });
-
-    // 2. Функція для зміни посилання
-    function resetApiUrl() {
-        let conf = confirm("Бажаєте змінити посилання на Apps Script?");
-        if (conf) {
-            localStorage.removeItem('apps_script_url');
-            location.reload();
-        }
-    }
-</script>
-
 </body>
 </html>
