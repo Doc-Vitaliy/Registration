@@ -7,26 +7,17 @@
     <style>
         :root { --admin-color: #2c3e50; --accent: #3498db; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; }
-        
-        /* Авторизація */
         .login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; }
         .login-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 350px; text-align: center; }
-        
-        /* Панель керування */
         .admin-panel { display: none; padding: 10px; }
         .header { background: var(--admin-color); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 15px 15px; }
-        
-        /* Таби */
         .tab-menu { display: flex; overflow-x: auto; background: white; padding: 10px; gap: 10px; margin-top: 10px; border-radius: 10px; }
-        .tab-btn { padding: 10px 20px; border: none; background: #eee; border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: bold; }
+        .tab-btn { padding: 10px 20px; border: none; background: #eee; border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: var(--accent); color: white; }
-
-        /* Таблиці */
         .table-container { background: white; margin-top: 15px; border-radius: 10px; overflow-x: auto; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
-        th { background: #f8f9fa; color: #666; }
-
+        th { background: #f8f9fa; color: #666; position: sticky; top: 0; }
         input, select, .btn-login { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
         .btn-login { background: var(--admin-color); color: white; font-weight: bold; cursor: pointer; border: none; }
     </style>
@@ -44,7 +35,7 @@
         </select>
         <input type="password" id="admin-pin" placeholder="Введіть ПІН-код" maxlength="4" inputmode="numeric" style="text-align: center; letter-spacing: 5px;">
         <button class="btn-login" onclick="tryLogin()">УВІЙТИ</button>
-        <a href="index.html" style="text-decoration: none; font-size: 13px; color: #888;">Повернутись в меню</a>
+        <a href="index.html" style="text-decoration: none; font-size: 13px; color: #888; display: block; margin-top: 10px;">Повернутись в меню</a>
     </div>
 </div>
 
@@ -55,34 +46,100 @@
     </div>
 
     <div class="tab-menu">
-        <button class="tab-btn active" onclick="loadLog('auto')">🚚 Авто</button>
-        <button class="tab-btn" onclick="loadLog('workers')">👤 Співробітники</button>
-        <button class="tab-btn" onclick="loadLog('passes')">🎫 Перепустки</button>
-        <button class="tab-btn" onclick="loadLog('keys')">🔑 Ключі</button>
+        <button class="tab-btn active" onclick="loadLog('auto', event)">🚚 Авто</button>
+        <button class="tab-btn" onclick="loadLog('workers', event)">👤 Співробітники</button>
+        <button class="tab-btn" onclick="loadLog('passes', event)">🎫 Перепустки</button>
+        <button class="tab-btn" onclick="loadLog('keys', event)">🔑 Ключі</button>
     </div>
-	<script>
-    // 1. Логіка ініціалізації API (як у ScanBox)
-    document.addEventListener("DOMContentLoaded", function() {
-        let API_URL = localStorage.getItem('apps_script_url');
 
+    <div id="log-content" class="table-container">
+        <p style="padding: 20px; color: #888;">Оберіть журнал для перегляду</p>
+    </div>
+</div>
+
+<script>
+    const API_URL = localStorage.getItem('apps_script_url');
+
+    const guards = { 
+        "Ковальчук О.": "7777", 
+        "Олійник В.": "8888", 
+        "Сидоренко М.": "9999" 
+    };
+
+    function tryLogin() {
+        const user = document.getElementById('admin-user').value;
+        const pin = document.getElementById('admin-pin').value;
+
+        if (guards[user] === pin) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+            document.getElementById('active-user').innerText = user;
+            loadLog('auto'); // Завантаження за замовчуванням
+        } else {
+            alert("❌ Невірний ПІН-код!");
+            document.getElementById('admin-pin').value = "";
+        }
+    }
+
+    async function loadLog(type, event) {
         if (!API_URL) {
-            API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
-            if (API_URL && API_URL.includes("script.google.com")) {
-                localStorage.setItem('apps_script_url', API_URL);
-                alert("API успішно збережено!");
-            } else if (API_URL) {
-                alert("Схоже, посилання некоректне. Спробуйте ще раз.");
-                localStorage.removeItem('apps_script_url');
+            alert("Спочатку налаштуйте API на головній сторінці!");
+            return;
+        }
+
+        // Перемикання стилю кнопок
+        if (event) {
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        const container = document.getElementById('log-content');
+        container.innerHTML = "<p style='padding:20px;'>⏳ Завантаження даних...</p>";
+
+        try {
+            const response = await fetch(`${API_URL}?logType=${type}`);
+            const data = await response.json();
+            renderTable(data);
+        } catch (error) {
+            console.error("Помилка:", error);
+            container.innerHTML = "<p style='padding:20px; color:red;'>❌ Помилка з'єднання з Google Таблицею.</p>";
+        }
+    }
+
+    function renderTable(data) {
+        const container = document.getElementById('log-content');
+        
+        if (!data || data.length === 0) {
+            container.innerHTML = "<p style='padding:20px;'>Журнал порожній.</p>";
+            return;
+        }
+
+        let html = `<table><thead><tr>`;
+        const headers = Object.keys(data[0]);
+        headers.forEach(h => html += `<th>${h}</th>`);
+        html += `</tr></thead><tbody>`;
+
+        data.forEach(row => {
+            html += `<tr>`;
+            headers.forEach(h => html += `<td>${row[h] || ""}</td>`);
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        if (!API_URL) {
+            let url = prompt("Вставте посилання на ващ Google Apps Script:");
+            if (url && url.includes("script.google.com")) {
+                localStorage.setItem('apps_script_url', url);
+                location.reload();
             }
         }
     });
-
-    // 2. Функція для зміни посилання
-    function resetApiUrl() {
-        let conf = confirm("Бажаєте змінити посилання на Apps Script?");
-        if (conf) {
-            localStorage.removeItem('apps_script_url');
-            location.reload();
-        }
-    }
 </script>
+
+</body>
+</html>
