@@ -17,7 +17,7 @@
         .title { font-size: 16px; }
         .header { grid-column: span 2; text-align: center; margin-bottom: 10px; color: #1a73e8; }
         
-        /* Кнопка налаштувань */
+        /* Кнопка налаштувань у кутку */
         .settings-btn { 
             position: fixed; bottom: 15px; right: 15px; 
             background: #fff; border: 1px solid #ddd; 
@@ -62,28 +62,29 @@
 <button class="settings-btn" onclick="resetApiUrl()" title="Налаштувати API">⚙️</button>
 
 <script>
-    // 1. Логіка ініціалізації API (як у ScanBox)
+       
     document.addEventListener("DOMContentLoaded", function() {
+        // Перевіряємо, чи є вже збережене посилання в пам'яті браузера
         let API_URL = localStorage.getItem('apps_script_url');
 
+        // Якщо посилання немає — просимо користувача його ввести
         if (!API_URL) {
             API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
             if (API_URL && API_URL.includes("script.google.com")) {
                 localStorage.setItem('apps_script_url', API_URL);
-                alert("API успішно збережено!");
+                alert("API успішно збережено в пам'яті браузера!");
             } else if (API_URL) {
-                alert("Схоже, посилання некоректне. Спробуйте ще раз.");
-                localStorage.removeItem('apps_script_url');
+                alert("Це не схоже на посилання Google Script. Спробуйте ще раз.");
             }
         }
     });
 
-    // 2. Функція для зміни посилання
+    // Функція для зміни посилання через кнопку-шестерню
     function resetApiUrl() {
-        let conf = confirm("Бажаєте змінити посилання на Apps Script?");
+        let conf = confirm("Бажаєте змінити посилання на Google Apps Script?");
         if (conf) {
             localStorage.removeItem('apps_script_url');
-            location.reload();
+            location.reload(); // Перезавантаження викличе prompt знову
         }
     }
 </script>
