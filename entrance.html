@@ -19,16 +19,17 @@
         }
         select:focus, input:focus { border-color: var(--primary); }
 
-        /* Стиль для ПІН-коду (прихований ввід) */
         .pin-input { 
             letter-spacing: 15px; text-align: center; font-size: 24px; font-weight: bold; 
         }
 
         .btn-entry { 
-            width: 100%; padding: 15px; background: #007bff; color: white; 
+            width: 100%; padding: 15px; background: #28a745; color: white; 
             border: none; border-radius: 12px; font-size: 18px; font-weight: bold; 
-            cursor: pointer; margin-top: 10px;
+            cursor: pointer; margin-top: 10px; transition: 0.3s;
         }
+        .btn-entry:active { transform: scale(0.98); }
+        
         .btn-exit { 
             width: 100%; padding: 15px; background: #6c757d; color: white; 
             border: none; border-radius: 12px; font-size: 18px; cursor: pointer; margin-top: 10px;
@@ -51,8 +52,7 @@
 
     <div class="form-group">
         <label>Працівник</label>
-        <select id="worker-list">
-            </select>
+        <select id="worker-list"></select>
     </div>
 
     <div class="form-group">
@@ -61,14 +61,16 @@
                maxlength="4" inputmode="numeric" pattern="[0-9]{4}">
     </div>
 
-    <button class="btn-entry" onclick="submitAttendance('ВХІД')">ПОЧАТИ ЗМІНУ</button>
+    <button id="btn-submit" class="btn-entry" onclick="submitAttendance('ВХІД')">ПОЧАТИ ЗМІНУ</button>
     <button class="btn-exit" onclick="submitAttendance('ВИХІД')">ЗАВЕРШИТИ ЗМІНУ</button>
     
     <a href="index.html" class="btn-back">⬅ Повернутися в меню</a>
 </div>
 
 <script>
-    // Довільний список для тесту (потім будемо брати з Таблиці)
+    // Отримуємо API URL з пам'яті браузера
+    const API_URL = localStorage.getItem('apps_script_url');
+
     const workersData = [
         { name: "Іванов Іван", floor: "1", pin: "1111" },
         { name: "Петров Петро", floor: "1", pin: "2222" },
@@ -79,7 +81,7 @@
     function filterWorkers() {
         const floor = document.getElementById('floor').value;
         const list = document.getElementById('worker-list');
-        list.innerHTML = ""; // Очищуємо
+        list.innerHTML = ""; 
 
         const filtered = workersData.filter(w => w.floor === floor);
         filtered.forEach(w => {
@@ -95,61 +97,53 @@
         const pin = document.getElementById('pin').value;
         const floor = document.getElementById('floor').value;
 
-        // Знаходимо працівника в базі для перевірки ПІН
+        if (!API_URL) {
+            alert("❌ Помилка: Налаштуйте API на головній сторінці!");
+            return;
+        }
+
         const worker = workersData.find(w => w.name === workerName);
 
-        if (pin !== worker.pin) {
+        if (!worker || pin !== worker.pin) {
             alert("❌ Невірний ПІН-код!");
             document.getElementById('pin').value = "";
             return;
         }
 
+        // Блокуємо кнопку, щоб не натиснули двічі
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = true;
+        btn.innerText = "Відправка...";
+
         const payload = {
             action: 'reg_worker_attendance',
             fio: workerName,
             floor: floor,
-            type: type, // ВХІД або ВИХІД
-            timestamp: new Date().toISOString()
+            type: type
         };
 
-        // Тут буде твій fetch до Apps Script
-        console.log("Відправка даних:", payload);
-        
-        alert(`${type} зафіксовано для: ${workerName}\nЧас: ${new Date().toLocaleTimeString()}`);
-        
-        // Очищуємо форму
-        document.getElementById('pin').value = "";
+        try {
+            // Відправка даних у Google Apps Script
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Важливо для Google Scripts
+                body: JSON.stringify(payload)
+            });
+
+            alert(`✅ ${type} зафіксовано для: ${workerName}`);
+            document.getElementById('pin').value = "";
+
+        } catch (error) {
+            console.error("Помилка:", error);
+            alert("❌ Помилка з'єднання з таблицею");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "ПОЧАТИ ЗМІНУ";
+        }
     }
 
     // Запускаємо фільтрацію при завантаженні
     filterWorkers();
 </script>
-<script>
-    // 1. Логіка ініціалізації API (як у ScanBox)
-    document.addEventListener("DOMContentLoaded", function() {
-        let API_URL = localStorage.getItem('apps_script_url');
-
-        if (!API_URL) {
-            API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
-            if (API_URL && API_URL.includes("script.google.com")) {
-                localStorage.setItem('apps_script_url', API_URL);
-                alert("API успішно збережено!");
-            } else if (API_URL) {
-                alert("Схоже, посилання некоректне. Спробуйте ще раз.");
-                localStorage.removeItem('apps_script_url');
-            }
-        }
-    });
-
-    // 2. Функція для зміни посилання
-    function resetApiUrl() {
-        let conf = confirm("Бажаєте змінити посилання на Apps Script?");
-        if (conf) {
-            localStorage.removeItem('apps_script_url');
-            location.reload();
-        }
-    }
-</script>
-
 </body>
 </html>
