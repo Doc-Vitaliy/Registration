@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реєстрація Авто | DC-Link</title>
+    <style>
+        :root { --primary: #1a73e8; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .form-container { max-width: 500px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 25px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+        
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 16px; 
+            outline-color: var(--primary);
+        }
+        
+        input:invalid { border-color: #dc3545; }
+        
+        .btn-submit { 
+            width: 100%; 
+            padding: 15px; 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+        .btn-submit:hover { background: #218838; }
+        .btn-back { 
+            width: 100%; 
+            background: none; 
+            border: 1px solid #6c757d; 
+            color: #6c757d; 
+            padding: 10px; 
+            margin-top: 15px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+        }
+
+        /* Стиль для успішного номерка */
+        #result-card { display: none; text-align: center; }
+        .ticket-num { font-size: 64px; font-weight: bold; color: #28a745; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div class="form-container" id="main-card">
+    <div id="form-content">
+        <h2>🚚 Реєстрація прибуття</h2>
+        
+        <div class="form-group">
+            <label for="fio">ПІБ Водія</label>
+            <input type="text" id="fio" placeholder="Прізвище Ім'я По батькові" 
+                   pattern="^[А-Яа-яЁёІіЇїЄє' ]+$" title="Тільки літери" required>
+        </div>
+
+        <div class="form-group">
+            <label for="ttn">№ ТТН або ПН</label>
+            <input type="text" id="ttn" placeholder="Цифри та літери" 
+                   maxlength="20" required>
+        </div>
+
+        <div class="form-group">
+            <label for="company">Постачальник / Перевізник</label>
+            <input list="vendors" id="company" placeholder="Почніть вводити назву..." required>
+            <datalist id="vendors">
+                <option value="Нова Пошта">
+                <option value="Meest Express">
+                <option value="Сат">
+                <option value="Delivery">
+                <option value="DC-Link (Власна логістика)">
+                <option value="КиївМлин">
+            </datalist>
+        </div>
+
+        <div class="form-group">
+            <label for="car_model">Марка авто</label>
+            <input type="text" id="car_model" placeholder="Наприклад: Mercedes-Benz" required>
+        </div>
+
+        <div class="form-group">
+            <label for="car_number">Держ. номер авто</label>
+            <input type="text" id="car_number" placeholder="Наприклад: AA1234BB" 
+                   pattern="^[A-Z0-9А-Яа-я]+$" maxlength="10" required>
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Контактний телефон</label>
+            <input type="tel" id="phone" placeholder="0991234567" 
+                   pattern="[0-9]{10}" title="Формат: 0991234567 (10 цифр)" required>
+        </div>
+
+        <div class="form-group">
+            <label for="group">Група товару</label>
+            <select id="group">
+                <option value="КБТ">КБТ (Велика техніка)</option>
+                <option value="СГТ">СГТ (Середня техніка)</option>
+                <option value="МГТ">МГТ (Дрібна техніка)</option>
+                <option value="Інше">Інше</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="type">Тип вантажу</label>
+            <select id="type">
+                <option value="Піддони">На піддонах</option>
+                <option value="Насипом">Насипом / Коробки</option>
+            </select>
+        </div>
+
+        <button class="btn-submit" onclick="submitForm()">ОТРИМАТИ НОМЕР</button>
+        <button class="btn-back" onclick="window.location.href='index.html'">Повернутись в меню</button>
+    </div>
+
+    <div id="result-card">
+        <h3>Ваша реєстрація успішна!</h3>
+        <p>Ваш номер у черзі:</p>
+        <div class="ticket-num" id="ticket-val">---</div>
+        <p>Очікуйте повідомлення або виклику</p>
+        <button class="btn-submit" onclick="location.reload()">Зробити нову реєстрацію</button>
+    </div>
+</div>
+
+<script>
+    async function submitForm() {
+        // Перевірка валідності полів
+        const inputs = document.querySelectorAll('input');
+        for (let input of inputs) {
+            if (!input.checkValidity()) {
+                alert("Будь ласка, заповніть поле: " + input.previousElementSibling.innerText);
+                return;
+            }
+        }
+
+        const btn = document.querySelector('.btn-submit');
+        btn.disabled = true;
+        btn.innerText = "Відправка...";
+
+        const data = {
+            action: 'reg_auto',
+            fio: document.getElementById('fio').value,
+            ttn: document.getElementById('ttn').value,
+            company: document.getElementById('company').value,
+            car: document.getElementById('car_model').value + " " + document.getElementById('car_number').value,
+            phone: document.getElementById('phone').value,
+            group: document.getElementById('group').value,
+            type: document.getElementById('type').value
+        };
+
+        try {
+            // Тут буде твоє посилання на Apps Script
+            const API_URL = "ТВОЄ_ПОСИЛАННЯ_DEPLOY";
+            
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Важливо для Google Apps Script
+                body: JSON.stringify(data)
+            });
+
+            // Показуємо результат (оскільки no-cors не дає прочитати JSON, 
+            // ми або генеруємо номер самі, або чекаємо на повноцінне API)
+            document.getElementById('form-content').style.display = 'none';
+            document.getElementById('ticket-val').innerText = "T-" + (Math.floor(Math.random() * 90) + 10);
+            document.getElementById('result-card').style.display = 'block';
+
+        } catch (error) {
+            alert("Помилка відправки. Перевірте з'єднання.");
+            btn.disabled = false;
+            btn.innerText = "ОТРИМАТИ НОМЕР";
+        }
+    }
+</script>
+<script>
+    // 1. Логіка ініціалізації API (як у ScanBox)
+    document.addEventListener("DOMContentLoaded", function() {
+        let API_URL = localStorage.getItem('apps_script_url');
+
+        if (!API_URL) {
+            API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
+            if (API_URL && API_URL.includes("script.google.com")) {
+                localStorage.setItem('apps_script_url', API_URL);
+                alert("API успішно збережено!");
+            } else if (API_URL) {
+                alert("Схоже, посилання некоректне. Спробуйте ще раз.");
+                localStorage.removeItem('apps_script_url');
+            }
+        }
+    });
+
+    // 2. Функція для зміни посилання
+    function resetApiUrl() {
+        let conf = confirm("Бажаєте змінити посилання на Apps Script?");
+        if (conf) {
+            localStorage.removeItem('apps_script_url');
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>

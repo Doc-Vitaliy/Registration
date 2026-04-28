@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Видача перепусток | DC-Link</title>
+    <style>
+        :root { --primary: #1a73e8; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .card { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #d32f2f; margin-bottom: 20px; border-bottom: 2px solid #f8d7da; padding-bottom: 10px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; }
+        
+        input, select { 
+            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 10px; 
+            font-size: 16px; box-sizing: border-box; outline-color: var(--primary);
+        }
+
+        .pin-field { letter-spacing: 10px; text-align: center; font-weight: bold; border: 2px solid #1a73e8; }
+
+        .btn-issue { 
+            width: 100%; padding: 15px; background: #d32f2f; color: white; 
+            border: none; border-radius: 10px; font-size: 18px; font-weight: bold; 
+            cursor: pointer; margin-top: 15px; transition: 0.3s;
+        }
+        .btn-issue:hover { background: #b71c1c; }
+        .btn-back { display: block; text-align: center; margin-top: 20px; color: #666; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🎫 Тимчасова перепустка</h2>
+    
+    <div class="form-group">
+        <label>ПІБ Відвідувача</label>
+        <input type="text" id="guest-fio" placeholder="Кому видано" required>
+    </div>
+
+    <div class="form-group">
+        <label>Номер перепустки (картки/жетона)</label>
+        <input type="number" id="pass-number" placeholder="000" inputmode="numeric" required>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+    <div class="form-group">
+        <label>Охоронець (видав)</label>
+        <select id="guard-list">
+            <option value="Ковальчук О.">Ковальчук О.</option>
+            <option value="Олійник В.">Олійник В.</option>
+            <option value="Сидоренко М.">Сидоренко М.</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>ПІН-код охорони</label>
+        <input type="password" id="guard-pin" class="pin-field" placeholder="****" 
+               maxlength="4" inputmode="numeric">
+    </div>
+
+    <button class="btn-issue" onclick="issuePass()">ВИДАТИ ТА ЗАПИСАТИ</button>
+    
+    <a href="index.html" class="btn-back">⬅ На головну</a>
+</div>
+
+<script>
+    // База охорони (для тесту)
+    const guardsData = [
+        { name: "Ковальчук О.", pin: "7777" },
+        { name: "Олійник В.", pin: "8888" },
+        { name: "Сидоренко М.", pin: "9999" }
+    ];
+
+    async function issuePass() {
+        const guest = document.getElementById('guest-fio').value;
+        const passNum = document.getElementById('pass-number').value;
+        const guardName = document.getElementById('guard-list').value;
+        const pin = document.getElementById('guard-pin').value;
+
+        if (!guest || !passNum) {
+            alert("Заповніть ПІБ відвідувача та номер перепустки!");
+            return;
+        }
+
+        // Перевірка ПІН-коду охорони
+        const guard = guardsData.find(g => g.name === guardName);
+        if (pin !== guard.pin) {
+            alert("❌ Невірний ПІН-код охорони!");
+            return;
+        }
+
+        const payload = {
+            action: 'reg_pass',
+            guest: guest,
+            pass_id: passNum,
+            issued_by: guardName,
+            time: new Date().toLocaleString()
+        };
+
+        console.log("Дані перепустки:", payload);
+        
+        // Тут буде твій fetch до Apps Script
+        alert(`Перепустку №${passNum} видано!\nВідвідувач: ${guest}\nОхоронець: ${guardName}`);
+        
+        // Очищення форми
+        document.getElementById('guest-fio').value = "";
+        document.getElementById('pass-number').value = "";
+        document.getElementById('guard-pin').value = "";
+    }
+</script>
+<script>
+    // 1. Логіка ініціалізації API (як у ScanBox)
+    document.addEventListener("DOMContentLoaded", function() {
+        let API_URL = localStorage.getItem('apps_script_url');
+
+        if (!API_URL) {
+            API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
+            if (API_URL && API_URL.includes("script.google.com")) {
+                localStorage.setItem('apps_script_url', API_URL);
+                alert("API успішно збережено!");
+            } else if (API_URL) {
+                alert("Схоже, посилання некоректне. Спробуйте ще раз.");
+                localStorage.removeItem('apps_script_url');
+            }
+        }
+    });
+
+    // 2. Функція для зміни посилання
+    function resetApiUrl() {
+        let conf = confirm("Бажаєте змінити посилання на Apps Script?");
+        if (conf) {
+            localStorage.removeItem('apps_script_url');
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>

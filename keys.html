@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Видача ключів | DC-Link</title>
+    <style>
+        :root { --primary: #f57c00; --bg: #fdfefe; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eceff1; margin: 0; padding: 20px; }
+        .card { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 20px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; }
+        
+        select, input { 
+            width: 100%; padding: 12px; border: 1px solid #cfd8dc; border-radius: 10px; 
+            font-size: 16px; box-sizing: border-box; outline-color: var(--primary);
+        }
+
+        .pin-field { letter-spacing: 10px; text-align: center; font-weight: bold; background: #fffde7; }
+
+        .btn-action { 
+            width: 100%; padding: 15px; background: var(--primary); color: white; 
+            border: none; border-radius: 10px; font-size: 18px; font-weight: bold; 
+            cursor: pointer; margin-top: 10px; transition: 0.3s;
+        }
+        .btn-return { background: #455a64; margin-top: 10px; }
+        .btn-back { display: block; text-align: center; margin-top: 20px; color: #78909c; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🔑 Журнал ключів</h2>
+    
+    <div class="form-group">
+        <label>Оберіть ключ (Приміщення)</label>
+        <select id="key-name">
+            <option value="Склад 1 (Побутова)">Склад 1 (Побутова)</option>
+            <option value="Склад 2 (Дрібна техніка)">Склад 2 (Дрібна техніка)</option>
+            <option value="Серверна">Серверна</option>
+            <option value="Офіс 2 поверх">Офіс 2 поверх</option>
+            <option value="Рампа 5 (В'їзд)">Рампа 5 (В'їзд)</option>
+            <option value="Роздягальня">Роздягальня</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Співробітник</label>
+        <select id="worker-name">
+            <option value="Іванов І.">Іванов І.</option>
+            <option value="Петров П.">Петров П.</option>
+            <option value="Doc Vitaliy">Doc Vitaliy</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>ПІН-код підтвердження (4 цифри)</label>
+        <input type="password" id="pin" class="pin-field" placeholder="****" 
+               maxlength="4" inputmode="numeric">
+    </div>
+
+    <button class="btn-action" onclick="keyOperation('ВЗЯВ')">ОТРИМАТИ КЛЮЧ</button>
+    <button class="btn-action btn-return" onclick="keyOperation('ЗДАВ')">ПОВЕРНУТИ КЛЮЧ</button>
+    
+    <a href="index.html" class="btn-back">⬅ На головну</a>
+</div>
+
+<script>
+    // Довільні ПІН-коди для перевірки
+    const pins = {
+        "Іванов І.": "1111",
+        "Петров П.": "2222",
+        "Doc Vitaliy": "0000"
+    };
+
+    async function keyOperation(type) {
+        const key = document.getElementById('key-name').value;
+        const worker = document.getElementById('worker-name').value;
+        const pin = document.getElementById('pin').value;
+
+        if (pin !== pins[worker]) {
+            alert("❌ Помилка: Невірний ПІН-код!");
+            return;
+        }
+
+        const payload = {
+            action: 'reg_keys',
+            key_name: key,
+            worker: worker,
+            type: type, // ВЗЯВ або ЗДАВ
+            time: new Date().toLocaleString()
+        };
+
+        console.log("Запис по ключах:", payload);
+        
+        // Тут буде fetch до Google Apps Script
+        alert(`Успішно! \nКлюч: ${key} \nСтатус: ${type} \nПрацівник: ${worker}`);
+        
+        // Очищення ПІН-коду
+        document.getElementById('pin').value = "";
+    }
+</script>
+<script>
+    // 1. Логіка ініціалізації API (як у ScanBox)
+    document.addEventListener("DOMContentLoaded", function() {
+        let API_URL = localStorage.getItem('apps_script_url');
+
+        if (!API_URL) {
+            API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
+            if (API_URL && API_URL.includes("script.google.com")) {
+                localStorage.setItem('apps_script_url', API_URL);
+                alert("API успішно збережено!");
+            } else if (API_URL) {
+                alert("Схоже, посилання некоректне. Спробуйте ще раз.");
+                localStorage.removeItem('apps_script_url');
+            }
+        }
+    });
+
+    // 2. Функція для зміни посилання
+    function resetApiUrl() {
+        let conf = confirm("Бажаєте змінити посилання на Apps Script?");
+        if (conf) {
+            localStorage.removeItem('apps_script_url');
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>

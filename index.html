@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Складська Логістика | Головна</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 500px; width: 90%; }
+        .menu-item { 
+            background: white; padding: 30px 10px; border-radius: 20px; text-align: center; 
+            text-decoration: none; color: #333; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: 0.3s; display: flex; flex-direction: column; align-items: center;
+        }
+        .menu-item:hover { transform: scale(1.05); background: #e8f0fe; }
+        .icon { font-size: 40px; margin-bottom: 10px; }
+        .title { font-size: 16px; }
+        .header { grid-column: span 2; text-align: center; margin-bottom: 10px; color: #1a73e8; }
+        
+        /* Кнопка налаштувань */
+        .settings-btn { 
+            position: fixed; bottom: 15px; right: 15px; 
+            background: #fff; border: 1px solid #ddd; 
+            border-radius: 50%; width: 40px; height: 40px; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); opacity: 0.6;
+        }
+        .settings-btn:hover { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div class="menu-grid">
+    <div class="header"><h2>Система реєстрації Doc-Sklad</h2></div>
+    
+    <a href="auto.html" class="menu-item">
+        <span class="icon">🚚</span>
+        <span class="title">Реєстрація авто</span> 
+    </a>
+    
+    <a href="entrance.html" class="menu-item">
+        <span class="icon">🚪</span>
+        <span class="title">Вхід робітника</span>
+    </a>
+    
+    <a href="passes.html" class="menu-item">
+        <span class="icon">🎫</span>
+        <span class="title">Видача перепусток</span>
+    </a>
+    
+    <a href="admin.html" class="menu-item">
+        <span class="icon">🛡️</span>
+        <span class="title">Вхід працівника (Адмін)</span>
+    </a>
+    
+    <a href="keys.html" class="menu-item" style="grid-column: span 2; padding: 15px;">
+        <span class="icon">🔑</span>
+        <span class="title">Видача ключів</span>
+    </a>
+</div>
+
+<button class="settings-btn" onclick="resetApiUrl()" title="Налаштувати API">⚙️</button>
+
+<script>
+    // 1. Логіка ініціалізації API (як у ScanBox)
+    document.addEventListener("DOMContentLoaded", function() {
+        let API_URL = localStorage.getItem('apps_script_url');
+
+        if (!API_URL) {
+            API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
+            if (API_URL && API_URL.includes("script.google.com")) {
+                localStorage.setItem('apps_script_url', API_URL);
+                alert("API успішно збережено!");
+            } else if (API_URL) {
+                alert("Схоже, посилання некоректне. Спробуйте ще раз.");
+                localStorage.removeItem('apps_script_url');
+            }
+        }
+    });
+
+    // 2. Функція для зміни посилання
+    function resetApiUrl() {
+        let conf = confirm("Бажаєте змінити посилання на Apps Script?");
+        if (conf) {
+            localStorage.removeItem('apps_script_url');
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>

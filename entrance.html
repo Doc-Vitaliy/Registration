@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вхід Робітника | DC-Link</title>
+    <style>
+        :root { --primary: #1a73e8; --bg: #f4f7f9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .card { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 20px; }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #555; }
+        
+        select, input { 
+            width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 12px; 
+            font-size: 16px; box-sizing: border-box; outline: none; transition: 0.3s;
+        }
+        select:focus, input:focus { border-color: var(--primary); }
+
+        /* Стиль для ПІН-коду (прихований ввід) */
+        .pin-input { 
+            letter-spacing: 15px; text-align: center; font-size: 24px; font-weight: bold; 
+        }
+
+        .btn-entry { 
+            width: 100%; padding: 15px; background: #007bff; color: white; 
+            border: none; border-radius: 12px; font-size: 18px; font-weight: bold; 
+            cursor: pointer; margin-top: 10px;
+        }
+        .btn-exit { 
+            width: 100%; padding: 15px; background: #6c757d; color: white; 
+            border: none; border-radius: 12px; font-size: 18px; cursor: pointer; margin-top: 10px;
+        }
+        .btn-back { display: block; text-align: center; margin-top: 20px; color: #888; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🚪 Реєстрація зміни</h2>
+    
+    <div class="form-group">
+        <label>Виберіть поверх</label>
+        <select id="floor" onchange="filterWorkers()">
+            <option value="1">1 Поверх</option>
+            <option value="2">2 Поверх</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Працівник</label>
+        <select id="worker-list">
+            </select>
+    </div>
+
+    <div class="form-group">
+        <label>ПІН-код (4 цифри)</label>
+        <input type="password" id="pin" class="pin-input" placeholder="****" 
+               maxlength="4" inputmode="numeric" pattern="[0-9]{4}">
+    </div>
+
+    <button class="btn-entry" onclick="submitAttendance('ВХІД')">ПОЧАТИ ЗМІНУ</button>
+    <button class="btn-exit" onclick="submitAttendance('ВИХІД')">ЗАВЕРШИТИ ЗМІНУ</button>
+    
+    <a href="index.html" class="btn-back">⬅ Повернутися в меню</a>
+</div>
+
+<script>
+    // Довільний список для тесту (потім будемо брати з Таблиці)
+    const workersData = [
+        { name: "Іванов Іван", floor: "1", pin: "1111" },
+        { name: "Петров Петро", floor: "1", pin: "2222" },
+        { name: "Сидоров Сидір", floor: "2", pin: "3333" },
+        { name: "Олексюк Віталій", floor: "2", pin: "0000" }
+    ];
+
+    function filterWorkers() {
+        const floor = document.getElementById('floor').value;
+        const list = document.getElementById('worker-list');
+        list.innerHTML = ""; // Очищуємо
+
+        const filtered = workersData.filter(w => w.floor === floor);
+        filtered.forEach(w => {
+            let opt = document.createElement('option');
+            opt.value = w.name;
+            opt.innerHTML = w.name;
+            list.appendChild(opt);
+        });
+    }
+
+    async function submitAttendance(type) {
+        const workerName = document.getElementById('worker-list').value;
+        const pin = document.getElementById('pin').value;
+        const floor = document.getElementById('floor').value;
+
+        // Знаходимо працівника в базі для перевірки ПІН
+        const worker = workersData.find(w => w.name === workerName);
+
+        if (pin !== worker.pin) {
+            alert("❌ Невірний ПІН-код!");
+            document.getElementById('pin').value = "";
+            return;
+        }
+
+        const payload = {
+            action: 'reg_worker_attendance',
+            fio: workerName,
+            floor: floor,
+            type: type, // ВХІД або ВИХІД
+            timestamp: new Date().toISOString()
+        };
+
+        // Тут буде твій fetch до Apps Script
+        console.log("Відправка даних:", payload);
+        
+        alert(`${type} зафіксовано для: ${workerName}\nЧас: ${new Date().toLocaleTimeString()}`);
+        
+        // Очищуємо форму
+        document.getElementById('pin').value = "";
+    }
+
+    // Запускаємо фільтрацію при завантаженні
+    filterWorkers();
+</script>
+<script>
+    // 1. Логіка ініціалізації API (як у ScanBox)
+    document.addEventListener("DOMContentLoaded", function() {
+        let API_URL = localStorage.getItem('apps_script_url');
+
+        if (!API_URL) {
+            API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
+            if (API_URL && API_URL.includes("script.google.com")) {
+                localStorage.setItem('apps_script_url', API_URL);
+                alert("API успішно збережено!");
+            } else if (API_URL) {
+                alert("Схоже, посилання некоректне. Спробуйте ще раз.");
+                localStorage.removeItem('apps_script_url');
+            }
+        }
+    });
+
+    // 2. Функція для зміни посилання
+    function resetApiUrl() {
+        let conf = confirm("Бажаєте змінити посилання на Apps Script?");
+        if (conf) {
+            localStorage.removeItem('apps_script_url');
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>
