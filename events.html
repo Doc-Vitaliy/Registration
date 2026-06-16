@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Журнал подій | DC-Link</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="events.css">
+    <style>
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: 600; display: block; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
+        .check-group { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 5px; }
+        .check-group label { font-weight: normal; display: inline-flex; align-items: center; gap: 5px; }
+        .section { border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 20px; background: #f9f9f9; }
+        .section h3 { margin-top: 0; }
+        .btn-start, .btn-end, .btn-add-incident { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; margin-right: 10px; }
+        .btn-end { background: #dc3545; }
+        .btn-add-incident { background: #28a745; }
+        .incident-item { background: #fff; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+        .disabled-field { background: #e9ecef; pointer-events: none; opacity: 0.7; }
+        .success { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        .error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        .warning { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+<div class="container" style="max-width: 800px; margin: 20px auto;">
+    <div class="card">
+        <h2>📋 Журнал подій (зміна охоронця)</h2>
+        <div id="message"></div>
+
+        <div id="shift-start-section">
+            <div class="form-group">
+                <label>Оберіть охоронця</label>
+                <select id="guard_name"><option value="">-- Завантаження --</option></select>
+            </div>
+            <div class="form-group">
+                <label>ПІН-код охоронця</label>
+                <input type="password" id="guard_pin" maxlength="4" placeholder="****">
+            </div>
+            <button class="btn-start" onclick="startShift()">▶ Почати зміну</button>
+        </div>
+
+        <div id="shift-active-section" style="display: none;">
+            <div class="section">
+                <h3>📌 Інформація про зміну</h3>
+                <p><strong>Охоронець:</strong> <span id="current_guard_name"></span></p>
+                <p><strong>Початок зміни:</strong> <span id="shift_start_time"></span></p>
+            </div>
+
+            <div class="section">
+                <h3>🔍 Виявлені недоліки</h3>
+                <div class="check-group">
+                    <label><input type="checkbox" class="defect" value="Освітлення"> Освітлення</label>
+                    <label><input type="checkbox" class="defect" value="Відеоспостереження"> Відеоспостереження</label>
+                    <label><input type="checkbox" class="defect" value="Справність охоронних систем"> Справність охоронних систем</label>
+                    <label><input type="checkbox" class="defect" value="Інженерно-технічні укріплення"> Інженерно-технічні укріплення</label>
+                    <label><input type="checkbox" class="defect" value="Обладнання"> Обладнання</label>
+                </div>
+                <div class="form-group">
+                    <label>Інше (вказати деталі)</label>
+                    <textarea id="other_defects" rows="2" placeholder="Опишіть інші недоліки..."></textarea>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>👥 Контроль працівників компанії</h3>
+                <textarea id="employee_control" rows="3" placeholder="Вкажіть зауваження, порушення, перевірки..."></textarea>
+            </div>
+
+            <div class="section">
+                <h3>⚠️ Нештатні ситуації</h3>
+                <div id="incidents_list"></div>
+                <button class="btn-add-incident" onclick="addIncidentForm()">+ Додати нештатну ситуацію</button>
+            </div>
+
+            <div class="section">
+                <h3>🔑 Передача ключів</h3>
+                <div class="check-group">
+                    <label><input type="checkbox" id="keys_transferred"> Відмітка про передачу ключів (за потреби)</label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>✅ Підтвердження охоронця</h3>
+                <div class="form-group">
+                    <label>Введіть ПІН-код для підтвердження дій</label>
+                    <input type="password" id="confirm_pin" maxlength="4" placeholder="****">
+                </div>
+            </div>
+
+            <button class="btn-end" onclick="endShift()">⏹ Завершити зміну</button>
+        </div>
+        <a href="index.html" class="btn-back" style="display: block; text-align: center; margin-top: 15px;">⬅ На головну</a>
+    </div>
+</div>
+
+<script>
+   (function() {
+    if (window._eventsLoaded) return;
+    window._eventsLoaded = true;
+
+    let API_URL = null;
+    let guardsList = [];
+    let currentShift = null;
+    let incidents = [];
+
+    async function getApiUrl() {
+        if (API_URL) return API_URL;
+        if (typeof window.getApiUrl === 'function') {
+            API_URL = window.getApiUrl();
+        } else {
+            let url = localStorage.getItem('apps_script_url');
+            if (!url) {
+                url = prompt("Вставте посилання на Google Apps Script:");
+                if (url && url.includes("script.google.com")) {
+                    localStorage.setItem('apps_script_url', url);
+                } else if (url) alert("Невірне посилання");
+            }
+            API_URL = url;
+        }
+        return API_URL;
+    }
+
+    async function loadGuards() {
+        const select = document.getElementById('guard_name');
+        if (!select) return;
+        const url = await getApiUrl();
+        if (!url) {
+            select.innerHTML = '<option value="">-- API не налаштовано --</option>';
+            return;
+        }
+        try {
+            const resp = await fetch(`${url}?logType=users`);
+            const users = await resp.json();
+            guardsList = Array.isArray(users) ? users.filter(u => u.role && u.role.toLowerCase() === "охорона") : [];
+            select.innerHTML = '<option value="">-- Виберіть охоронця --</option>';
+            guardsList.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.name;
+                opt.textContent = g.name;
+                select.appendChild(opt);
+            });
+        } catch(e) { console.error(e); showMessage("Не вдалося завантажити список охоронців", "error"); }
+    }
+
+    window.startShift = async function() {
+        const guardName = document.getElementById('guard_name').value;
+        const pin = document.getElementById('guard_pin').value;
+        if (!guardName || !pin || pin.length !== 4) { showMessage("Оберіть охоронця та введіть ПІН-код", "error"); return; }
+        const guard = guardsList.find(g => g.name === guardName);
+        if (!guard || guard.pin !== pin) { showMessage("Невірний ПІН-код", "error"); document.getElementById('guard_pin').value = ""; return; }
+        currentShift = {
+            guardName, startTime: new Date().toLocaleString(),
+            defects: [], otherDefects: "", employeeControl: "", incidents: [], keysTransferred: false
+        };
+        incidents = [];
+        document.getElementById('current_guard_name').innerText = guardName;
+        document.getElementById('shift_start_time').innerText = currentShift.startTime;
+        document.getElementById('shift-start-section').style.display = 'none';
+        document.getElementById('shift-active-section').style.display = 'block';
+        showMessage("Зміну розпочато", "success");
+        loadFromLocalStorage();
+    };
+
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem('temp_shift_data');
+        if (saved && currentShift) {
+            try {
+                const data = JSON.parse(saved);
+                if (data.guardName === currentShift.guardName) {
+                    document.querySelectorAll('.defect').forEach(cb => cb.checked = data.defects.includes(cb.value));
+                    document.getElementById('other_defects').value = data.otherDefects || "";
+                    document.getElementById('employee_control').value = data.employeeControl || "";
+                    document.getElementById('keys_transferred').checked = data.keysTransferred || false;
+                    incidents = data.incidents || [];
+                    renderIncidents();
+                    showMessage("Відновлено збережені дані", "success");
+                }
+            } catch(e) {}
+        }
+    }
+
+    function saveToLocalStorage() {
+        if (!currentShift) return;
+        const defects = Array.from(document.querySelectorAll('.defect:checked')).map(cb => cb.value);
+        const shiftData = {
+            guardName: currentShift.guardName, startTime: currentShift.startTime,
+            defects, otherDefects: document.getElementById('other_defects').value,
+            employeeControl: document.getElementById('employee_control').value,
+            incidents, keysTransferred: document.getElementById('keys_transferred').checked
+        };
+        localStorage.setItem('temp_shift_data', JSON.stringify(shiftData));
+    }
+
+    window.addIncidentForm = function() {
+        const container = document.getElementById('incidents_list');
+        const idx = incidents.length;
+        const div = document.createElement('div'); div.className = 'incident-item';
+        div.innerHTML = `
+            <div class="form-group"><label>Опис ситуації</label><textarea id="inc_desc_${idx}" rows="2"></textarea></div>
+            <div class="form-group"><label>Кому доповіли</label><input type="text" id="inc_reported_${idx}"></div>
+            <div class="form-group"><label>Які заходи прийняли</label><textarea id="inc_actions_${idx}" rows="2"></textarea></div>
+            <button class="btn-add-incident" style="background:#dc3545;" onclick="window.removeIncident(${idx})">Видалити</button>
+        `;
+        container.appendChild(div);
+        incidents.push({ description: "", reportedTo: "", actions: "" });
+        saveToLocalStorage();
+    };
+
+    window.removeIncident = function(idx) {
+        incidents.splice(idx, 1);
+        renderIncidents();
+        saveToLocalStorage();
+    };
+
+    function renderIncidents() {
+        const container = document.getElementById('incidents_list');
+        if (!container) return;
+        container.innerHTML = "";
+        incidents.forEach((inc, i) => {
+            const div = document.createElement('div'); div.className = 'incident-item';
+            div.innerHTML = `
+                <div class="form-group"><label>Опис ситуації</label><textarea id="inc_desc_${i}" rows="2">${inc.description || ""}</textarea></div>
+                <div class="form-group"><label>Кому доповіли</label><input type="text" id="inc_reported_${i}" value="${inc.reportedTo || ""}"></div>
+                <div class="form-group"><label>Які заходи прийняли</label><textarea id="inc_actions_${i}" rows="2">${inc.actions || ""}</textarea></div>
+                <button class="btn-add-incident" style="background:#dc3545;" onclick="window.removeIncident(${i})">Видалити</button>
+            `;
+            container.appendChild(div);
+        });
+        incidents.forEach((_, i) => {
+            document.getElementById(`inc_desc_${i}`)?.addEventListener('input', (e) => { incidents[i].description = e.target.value; saveToLocalStorage(); });
+            document.getElementById(`inc_reported_${i}`)?.addEventListener('input', (e) => { incidents[i].reportedTo = e.target.value; saveToLocalStorage(); });
+            document.getElementById(`inc_actions_${i}`)?.addEventListener('input', (e) => { incidents[i].actions = e.target.value; saveToLocalStorage(); });
+        });
+    }
+
+    window.endShift = async function() {
+        if (!currentShift) return;
+        const confirmPin = document.getElementById('confirm_pin').value;
+        if (!confirmPin || confirmPin.length !== 4) { showMessage("Введіть ПІН-код для завершення", "error"); return; }
+        const guard = guardsList.find(g => g.name === currentShift.guardName);
+        if (!guard || guard.pin !== confirmPin) { showMessage("Невірний ПІН-код", "error"); document.getElementById('confirm_pin').value = ""; return; }
+        const defects = Array.from(document.querySelectorAll('.defect:checked')).map(cb => cb.value);
+        const otherDefects = document.getElementById('other_defects').value;
+        const employeeControl = document.getElementById('employee_control').value;
+        const keysTransferred = document.getElementById('keys_transferred').checked;
+        incidents.forEach((_, i) => {
+            incidents[i].description = document.getElementById(`inc_desc_${i}`)?.value || "";
+            incidents[i].reportedTo = document.getElementById(`inc_reported_${i}`)?.value || "";
+            incidents[i].actions = document.getElementById(`inc_actions_${i}`)?.value || "";
+        });
+        const url = new URL(await getApiUrl());
+        url.searchParams.append('action', 'reg_event_shift');
+        url.searchParams.append('guard', currentShift.guardName);
+        url.searchParams.append('start_time', currentShift.startTime);
+        url.searchParams.append('end_time', new Date().toLocaleString());
+        url.searchParams.append('defects', defects.join(', '));
+        url.searchParams.append('other_defects', otherDefects);
+        url.searchParams.append('employee_control', employeeControl);
+        url.searchParams.append('incidents', JSON.stringify(incidents));
+        url.searchParams.append('keys_transferred', keysTransferred ? "Так" : "Ні");
+        try {
+            const resp = await fetch(url.toString());
+            const result = await resp.json();
+            if (result.status === "success") {
+                showMessage("Зміну завершено, дані збережено", "success");
+                localStorage.removeItem('temp_shift_data');
+                document.getElementById('shift-active-section').style.display = 'none';
+                document.getElementById('shift-start-section').style.display = 'block';
+                currentShift = null;
+                incidents = [];
+                document.getElementById('guard_pin').value = "";
+                document.getElementById('confirm_pin').value = "";
+            } else throw new Error(result.message);
+        } catch(e) { showMessage("Помилка: " + e.message, "error"); }
+    };
+
+    function showMessage(msg, type) {
+        const div = document.getElementById('message');
+        if (div) div.innerHTML = `<div class="${type}">${msg}</div>`;
+        setTimeout(() => { if (div && div.innerHTML === `<div class="${type}">${msg}</div>`) div.innerHTML = ""; }, 4000);
+    }
+
+    function attachAutoSave() {
+        document.querySelectorAll('.defect, #other_defects, #employee_control, #keys_transferred').forEach(el => {
+            el.addEventListener('change', saveToLocalStorage);
+            el.addEventListener('input', saveToLocalStorage);
+        });
+    }
+
+    (async function() {
+        await getApiUrl();
+        if (API_URL) { await loadGuards(); attachAutoSave(); }
+    })();
+})();
+</script>
+</body>
+</html>

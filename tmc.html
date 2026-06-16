@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Журнал ТМЦ | DC-Link</title>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h2> Журнал ТМЦ</h2>
+        <div id="message"></div>
+
+        <div class="form-group">
+            <label>Тип операції *</label>
+            <div class="toggle-group">
+                <button type="button" class="toggle-btn" data-op="in"> Заніс</button>
+                <button type="button" class="toggle-btn" data-op="out"> Виніс</button>
+            </div>
+            <input type="hidden" id="operation" value="in">
+        </div>
+
+        <div class="form-group">
+            <label>Список ТМЦ <span style="font-weight:normal; color:#94a3b8;">(назва та кількість обов'язкові)</span></label>
+            <div id="tmc-items-container"></div>
+            <button type="button" class="btn-add-item" id="add-item-btn">➕ Додати позицію</button>
+        </div>
+
+        <div class="form-group">
+            <label>ПІБ відповідального / отримувача *</label>
+            <input type="text" id="responsible" list="workers-datalist" placeholder="Почніть вводити ПІБ або напишіть вручну" required autocomplete="off">
+            <datalist id="workers-datalist"></datalist>
+        </div>
+
+        <div class="form-group">
+            <label>Охоронець (хто реєструє)</label>
+            <div class="select-wrapper">
+                <select id="guard_name"><option value="">-- Завантаження --</option></select>
+                <button type="button" class="btn-refresh-inline" id="refreshGuardsBtn" title="Оновити список">🔄</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>ПІН-код охоронця</label>
+            <input type="password" id="guard_pin" class="pin-field" maxlength="4" inputmode="numeric" placeholder="••••">
+        </div>
+
+        <button type="button" id="submit-action" class="btn-submit">ЗАРЕЄСТРУВАТИ</button>
+        <a href="index.html" class="btn-back">⬅ Повернутися в меню</a>
+    </div>
+</div>
+
+<script>
+(function() {
+    // Перевіряємо наявність глобальної функції getCachedData
+    if (typeof window.getCachedData !== 'function') {
+        window.getCachedData = async function(key, force = false) {
+            const cacheKey = `cached_${key}`;
+            const cached = sessionStorage.getItem(cacheKey);
+            if (!force && cached) {
+                try { return JSON.parse(cached).data; } catch(e) {}
+            }
+            const url = window.getApiUrl ? window.getApiUrl() : localStorage.getItem('apps_script_url');
+            if (!url) return null;
+            if (key === 'users') {
+                const resp = await fetch(`${url}?logType=users`);
+                const data = await resp.json();
+                if (Array.isArray(data)) {
+                    sessionStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
+                    return data;
+                }
+            }
+            return [];
+        };
+    }
+
+    let itemCounter = 0;
+
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+    }
+
+    function createTmcRow(data = { name: "", quantity: 1, brand: "", model: "", serial: "" }) {
+        itemCounter++;
+        const div = document.createElement('div');
+        div.className = 'tmc-item-row';
+        div.innerHTML = `
+            <button type="button" class="btn-remove-item" title="Видалити позицію">✖</button>
+            <div class="tmc-grid">
+                <div class="tmc-name1">
+                    <input type="text" class="tmc-name-input" placeholder="Назва товару *" value="${escapeHtml(data.name)}" required>
+                </div>
+                <div class="tmc-row-2cols">
+                    <input type="text" class="tmc-brand-input" placeholder="Бренд" value="${escapeHtml(data.brand)}">
+                    <input type="text" class="tmc-model-input" placeholder="Модель" value="${escapeHtml(data.model)}">
+                </div>
+                <div class="tmc-row-2cols-qty">
+                    <input type="text" class="tmc-serial-input" placeholder="Серійний номер" value="${escapeHtml(data.serial)}">
+                    <input type="number" class="tmc-qty-input" placeholder="К-сть *" min="1" value="${data.quantity}" required>
+                </div>
+            </div>
+        `;
+        div.querySelector('.btn-remove-item').addEventListener('click', () => {
+            const container = document.getElementById('tmc-items-container');
+            if (container.children.length > 1) div.remove();
+            else alert("Повинна залишатися хоча б одна позиція товару!");
+        });
+        return div;
+    }
+
+    // ========== ЗАВАНТАЖЕННЯ ОХОРОНЦІВ ТА ПРАЦІВНИКІВ ==========
+    async function loadGuardsAndWorkers() {
+        const guardSelect = document.getElementById('guard_name');
+        const workersDatalist = document.getElementById('workers-datalist');
+        if (!guardSelect || !workersDatalist) return;
+
+        const users = await window.getCachedData('users');
+        if (!users) {
+            guardSelect.innerHTML = '<option value="">-- Помилка --</option>';
+            return;
+        }
+        const guards = users.filter(u => u.role && u.role.toLowerCase() === 'охорона');
+        const workers = users.filter(u => !u.role || u.role.toLowerCase() !== 'охорона');
+
+        guardSelect.innerHTML = '<option value="">-- Виберіть охоронця --</option>';
+        guards.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.name;
+            opt.textContent = g.name;
+            guardSelect.appendChild(opt);
+        });
+
+        workersDatalist.innerHTML = "";
+        workers.forEach(w => {
+            const opt = document.createElement('option');
+            opt.value = w.name;
+            workersDatalist.appendChild(opt);
+        });
+    }
+
+    // ========== ВІДПРАВЛЕННЯ ==========
+    async function submitTmcForm() {
+        const btn = document.getElementById('submit-action');
+        if (btn.disabled) return;
+
+        const guardName = document.getElementById('guard_name').value;
+        const guardPin = document.getElementById('guard_pin').value;
+        const responsible = document.getElementById('responsible').value.trim();
+        const operation = document.getElementById('operation').value; // 'in' або 'out'
+
+        if (!guardName) { showMessage("Оберіть охоронця", "error"); return; }
+        if (!guardPin || guardPin.length !== 4) { showMessage("Введіть 4-цифровий ПІН-код охоронця", "error"); return; }
+        if (!responsible) { showMessage("Вкажіть ПІБ відповідального", "error"); return; }
+
+        const users = await window.getCachedData('users');
+        const guards = users.filter(u => u.role && u.role.toLowerCase() === 'охорона');
+        const guard = guards.find(g => g.name === guardName);
+        if (!guard || guard.pin !== guardPin) {
+            showMessage("Невірний ПІН-код охоронця", "error");
+            document.getElementById('guard_pin').value = "";
+            return;
+        }
+
+        const rows = document.querySelectorAll('.tmc-item-row');
+        const items = [];
+        let valid = true;
+
+        rows.forEach(row => {
+            const name = row.querySelector('.tmc-name-input').value.trim();
+            const qty = row.querySelector('.tmc-qty-input').value.trim();
+            if (!name || !qty) {
+                valid = false;
+                row.style.borderColor = '#ef4444';
+            } else {
+                row.style.borderColor = '#3a506b';
+                const brand = row.querySelector('.tmc-brand-input').value.trim();
+                const model = row.querySelector('.tmc-model-input').value.trim();
+                const serial = row.querySelector('.tmc-serial-input').value.trim();
+                // Формуємо рядок "Назва / Бренд / Модель / Серія"
+                const position = [name, brand, model, serial].filter(p => p).join(' / ');
+                items.push({
+                    position: position,
+                    quantity: parseInt(qty, 10)
+                });
+            }
+        });
+
+        if (!valid || items.length === 0) {
+            showMessage("Заповніть назву та кількість для всіх позицій", "error");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "ВІДПРАВКА...";
+
+        try {
+            const apiUrl = window.getApiUrl ? window.getApiUrl() : localStorage.getItem('apps_script_url');
+            if (!apiUrl) throw new Error("API не налаштовано");
+
+            const url = new URL(apiUrl);
+            url.searchParams.append('action', 'reg_tmc');
+            url.searchParams.append('responsible', responsible);
+            url.searchParams.append('guard', guardName);
+            url.searchParams.append('operation', operation === 'in' ? 'заніс' : 'виніс');
+            url.searchParams.append('items', JSON.stringify(items));
+
+            const response = await fetch(url.toString());
+            const result = await response.json();
+            if (result.status === "success") {
+                showMessage(`✅ Успішно зареєстровано ${items.length} поз. ТМЦ (${operation === 'in' ? 'заніс' : 'виніс'}) для ${responsible}`, "success");
+                const container = document.getElementById('tmc-items-container');
+                container.innerHTML = "";
+                container.appendChild(createTmcRow());
+                document.getElementById('responsible').value = "";
+                document.getElementById('guard_pin').value = "";
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (e) {
+            showMessage("Помилка: " + e.message, "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "ЗАРЕЄСТРУВАТИ";
+        }
+    }
+
+    function showMessage(msg, type) {
+        const div = document.getElementById('message');
+        if (div) div.innerHTML = `<div class="${type}">${msg}</div>`;
+        setTimeout(() => { if (div && div.innerHTML === `<div class="${type}">${msg}</div>`) div.innerHTML = ""; }, 4000);
+    }
+
+    // ========== ІНІЦІАЛІЗАЦІЯ ==========
+    async function initTmcPage() {
+        const container = document.getElementById('tmc-items-container');
+        if (!container) return;
+        container.innerHTML = "";
+        container.appendChild(createTmcRow());
+
+        await loadGuardsAndWorkers();
+
+        // Кнопка оновлення охоронців
+        const refreshBtn = document.getElementById('refreshGuardsBtn');
+        if (refreshBtn) {
+            const newBtn = refreshBtn.cloneNode(true);
+            refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
+            newBtn.addEventListener('click', async () => {
+                await window.getCachedData('users', true);
+                await loadGuardsAndWorkers();
+                showMessage("🔄 Списки оновлено", "success");
+            });
+        }
+
+        // Кнопка додавання позиції
+        const addBtn = document.getElementById('add-item-btn');
+        if (addBtn) {
+            const newBtn = addBtn.cloneNode(true);
+            addBtn.parentNode.replaceChild(newBtn, addBtn);
+            newBtn.addEventListener('click', () => {
+                container.appendChild(createTmcRow());
+            });
+        }
+
+        // Перемикачі Заніс / Виніс
+        const toggleGroup = document.querySelector('.toggle-group');
+        const operationInput = document.getElementById('operation');
+        if (toggleGroup) {
+            toggleGroup.innerHTML = '';
+            const btnIn = document.createElement('button');
+            btnIn.type = 'button';
+            btnIn.className = 'toggle-btn';
+            btnIn.dataset.op = 'in';
+            btnIn.textContent = ' Заніс';
+            const btnOut = document.createElement('button');
+            btnOut.type = 'button';
+            btnOut.className = 'toggle-btn';
+            btnOut.dataset.op = 'out';
+            btnOut.textContent = ' Виніс';
+            btnIn.addEventListener('click', () => {
+                btnIn.classList.add('active');
+                btnOut.classList.remove('active');
+                if (operationInput) operationInput.value = 'in';
+            });
+            btnOut.addEventListener('click', () => {
+                btnOut.classList.add('active');
+                btnIn.classList.remove('active');
+                if (operationInput) operationInput.value = 'out';
+            });
+            toggleGroup.appendChild(btnIn);
+            toggleGroup.appendChild(btnOut);
+            btnIn.classList.add('active');
+            if (operationInput) operationInput.value = 'in';
+        }
+
+        // Головна кнопка відправки
+        const submitBtn = document.getElementById('submit-action');
+        if (submitBtn) {
+            const newBtn = submitBtn.cloneNode(true);
+            submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+            newBtn.addEventListener('click', submitTmcForm);
+            newBtn.disabled = false;
+            newBtn.innerText = "ЗАРЕЄСТРУВАТИ";
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTmcPage);
+    } else {
+        initTmcPage();
+    }
+})();
+</script>
+</body>
+</html>

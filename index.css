@@ -1,0 +1,793 @@
+/* ==========================================================================
+   ГЛОБАЛЬНИЙ PREMIUM DARK СТИЛЬ ДЛЯ СИСТЕМИ DOC-SKLAD (FINAL REVISION)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ---------- 1. БАЗОВІ СТИЛІ ТА АНІМОВАНИЙ ФОН ---------- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0b1329;
+    /* Додаємо легкий статичний преміум-градієнт замість анімації */
+    background-image: radial-gradient(circle at 50% 50%, #1c2541 0%, #0b1329 100%);
+    background-attachment: fixed;
+    color: #f1f5f9;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+#particles-js {
+    display: none !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.main-container {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* ---------- 2. СТИЛІЗАЦІЯ ГОЛОВНОГО МЕНЮ (ПЛИТКА) ---------- */
+.header h2 {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 40px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    width: 100%;
+}
+
+.menu-item {
+    position: relative;
+    height: 180px;
+    border-radius: 20px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(58, 80, 107, 0.3);
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease;
+}
+
+.menu-item:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 35px rgba(56, 189, 248, 0.25);
+    border-color: #38bdf8;
+}
+
+.card-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.5s ease;
+}
+
+.menu-item:hover .card-bg {
+    transform: scale(1.05);
+}
+
+.card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(11, 19, 41, 0.4) 0%, rgba(28, 37, 65, 0.2) 100%);
+    transition: background 0.3s ease;
+}
+
+.menu-item:hover .card-overlay {
+    background: linear-gradient(135deg, rgba(11, 19, 41, 0.2) 0%, rgba(28, 37, 65, 0.1) 100%);
+}
+
+.card-content {
+    position: relative;
+    z-index: 3;
+    padding: 20px;
+    text-align: center;
+}
+
+.card-content .title {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    transition: color 0.3s ease;
+}
+
+.menu-item:hover .card-content .title {
+    color: #38bdf8;
+}
+
+.settings-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(28, 37, 65, 0.8);
+    border: 1px solid #3a506b;
+    color: #94a3b8;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.2s ease;
+}
+.settings-btn:hover {
+    color: #ffffff;
+    background: #1c2541;
+    border-color: #38bdf8;
+    transform: rotate(45deg);
+}
+
+
+/* ---------- 3. ДИНАМІЧНІ ФОРМИ (БЕЗ КОНФЛІКТІВ З JS) ---------- */
+
+#page-content .container {
+    width: 100%;
+    max-width: 460px;
+    padding: 16px;
+    box-sizing: border-box;
+    margin: 0 auto;
+}
+
+/* Уніфікована темна картка */
+#page-content .card, 
+#page-content .form-container,
+#page-content .login-card {
+    background: rgba(28, 37, 65, 0.95);
+    border: 1px solid #3a506b;
+    border-radius: 24px;
+    padding: 36px 28px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+    color: #f1f5f9;
+    width: 100%;
+	max-width: 460px;
+    box-sizing: border-box;
+	margin: 0 auto;
+}
+
+/* ЗАЛІЗОБЕТОННЕ ПРИХОВУВАННЯ КВИТКА ДО РЕЄСТРАЦІЇ */
+#page-content #result-card {
+    display: none; /* JS сам увімкне його через .style.display='block' */
+    background: #0b1329 !important;
+    border: 2px dashed #38bdf8 !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    margin-top: 20px !important;
+    text-align: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#page-content h2 {
+    color: #38bdf8;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #3a506b;
+}
+
+#page-content .form-group {
+    margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+#page-content label {
+    display: block;
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+/* Поля введення */
+#page-content input, 
+#page-content select, 
+#page-content textarea {
+    width: 100%;
+    height: 50px;
+    padding: 10px 16px;
+    border: 1px solid #3a506b;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #ffffff;
+    background-color: #0b1329;
+    box-sizing: border-box;
+    outline: none;
+    transition: all 0.2s ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+#page-content textarea {
+    height: auto;
+    min-height: 100px;
+    resize: vertical;
+}
+
+#page-content input:focus, 
+#page-content select:focus,
+#page-content textarea:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25);
+    background-color: #0f1c3f;
+}
+
+/* ---------- КНОПКИ-ПЕРЕМИКАЧІ В АВТО ---------- */
+#page-content .toggle-group {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 5px;
+    width: 100%;
+}
+
+#page-content .toggle-btn {
+   flex: 1;
+    height: 50px; /* Вирівняли висоту з інпутами */
+    background: #0b1329; /* Глибокий темний фон, як у інпутів */
+    border: 1px solid #3a506b;
+    border-radius: 12px; /* Округлені кути для гармонії */
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    color: #94a3b8; /* Спокійний сірий колір для неактивного стану */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#page-content .toggle-btn.active {
+background: rgba(16, 185, 129, 0.1) !important; 
+    border-color: #10b981 !important;
+    color: #34d399 !important;
+    font-weight: 700;
+    box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.2), 0 4px 12px rgba(16, 185, 129, 0.15) !important;
+}
+
+#page-content .toggle-btn:hover:not(.active) {
+   border-color: #38bdf8;
+    color: #ffffff;
+    background: #1c2541;
+}
+/* ---------- СТИЛІ ДЛЯ КНОПКИ ЛОГІНУ В admin.html ---------- */
+#page-content .btn-login {
+    width: 100% !important;
+    height: 52px !important;
+    background: #38bdf8 !important;
+    color: #0b1329 !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3) !important;
+    margin-top: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+}
+#page-content .btn-login:hover {
+    background: #0ea5e9 !important;
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5) !important;
+    color: #0b1329 !important;
+}
+/* ---------- ПЕРЕМИКАЧ РЕЖИМІВ ДЛЯ PASSES/KEYS (ВИДАЧА/ПОВЕРНЕННЯ) ---------- */
+#page-content .mode-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    width: 100%;
+}
+
+#page-content .mode-btn {
+    flex: 1;
+    height: 50px;
+    background: #0b1329;
+    border: 1px solid #3a506b;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#page-content .mode-btn.active-issue {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: #22c55e;
+    color: #4ade80;
+    box-shadow: inset 0 0 10px rgba(34, 197, 94, 0.1);
+}
+
+#page-content .mode-btn.active-return {
+    background: rgba(249, 115, 22, 0.1);
+    border-color: #f97316;
+    color: #fb923c;
+    box-shadow: inset 0 0 10px rgba(249, 115, 22, 0.1);
+}
+
+#page-content .mode-btn:hover:not(.active-issue):not(.active-return) {
+    border-color: #38bdf8;
+    color: #ffffff;
+    background: #1c2541;
+}
+
+
+
+/* ---------- ЕЛЕМЕНТИ ОНОВЛЕННЯ ОХОРОНИ ---------- */
+#page-content .select-wrapper {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+#page-content .select-wrapper select {
+    padding-right: 50px !important;
+    width: 100% !important;
+}
+
+#page-content .btn-refresh-inline,
+#page-content .select-wrapper button:not(.toggle-btn) {
+    position: absolute;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: transparent !important; /* Робимо фон прозорим */
+    color: #ffffff;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+#page-content .btn-refresh-inline:hover {
+    background: #517199;
+}
+
+#page-content .pin-field {
+    text-align: center;
+    letter-spacing: 6px;
+    font-weight: 700;
+}
+
+/* ---------- СВІТЛІ КНОПКИ ДІЇ (ЗАРЕЄСТРУВАТИ В АВТО ТОЩО) ---------- */
+#page-content .btn-submit,
+#page-content button[type="submit"],
+#page-content .action-btn,
+#page-content button[onclick*="register"],
+#page-content button[onclick*="Key"] {
+    width: 100% !important;
+    height: 52px !important;
+    background: #38bdf8 !important; /* Для авто залишається суцільний блакитний */
+    color: #0b1329 !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3) !important;
+    margin-top: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+}
+
+/* Ховери для суцільних блакитних кнопок */
+#page-content .btn-submit:hover,
+#page-content button[type="submit"]:hover,
+#page-content .action-btn:hover {
+    background: #0ea5e9 !important;
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5) !important;
+    color: #0b1329 !important;
+}
+
+/* ---------- КНОПКА ПОЧАТИ ЗМІНУ (НОВИЙ ЗЕЛЕНИЙ OUTLINE СТИЛЬ) ---------- */
+#page-content button[onclick*="Attendance('ВХІД')"],
+#page-content .btn-entry {
+    width: 100% !important;
+    height: 52px !important;
+    background: rgba(16, 185, 129, 0.1) !important;
+    border: 1px solid #10b981 !important;
+    color: #34d399 !important;
+    border-radius: 12px !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    margin-top: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    box-shadow: none !important;
+}
+
+/* Ховер для Почати зміну (Повна заливка зеленим, текст білим) */
+#page-content button[onclick*="Attendance('ВХІД')"]:hover,
+#page-content .btn-entry:hover {
+    background: #10b981 !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
+}
+  
+
+/* ---------- КНОПКА ЗАВЕРШЕННЯ ЗМІНИ (ВИХІД) ---------- */
+#page-content button[onclick*="Attendance('ВИХІД')"],
+#page-content .btn-exit {
+    width: 100% !important;
+    height: 52px !important;
+    background: rgba(239, 68, 68, 0.1) !important; 
+    border: 1px solid #ef4444 !important; 
+    color: #f87171 !important; 
+    border-radius: 12px !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    margin-top: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: none !important;
+}
+
+#page-content button[onclick*="Attendance('ВИХІД')"]:hover,
+#page-content .btn-exit:hover {
+    background: #ef4444 !important; 
+    color: #ffffff !important;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* СТАН ДЛЯ ВИМКНЕНИХ КНОПОК */
+#page-content .btn-submit:disabled,
+#page-content button:disabled {
+    background: #1c2541 !important;
+    color: #64748b !important;
+    border: 1px solid #3a506b !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+}
+
+/* ---------- ПОЗИЦІОНУВАННЯ КНОПКИ ОНОВЛЕННЯ ВСЕРЕДИНІ СЕЛЕКТОРА ---------- */
+#page-content .select-wrapper {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+/* Робимо відступ справа у селекторі, щоб текст не залазив під стрілочку */
+#page-content .select-wrapper select {
+    padding-right: 50px !important;
+}
+
+/* Сама кнопка-стрілочка стає акуратною іконкою в кінці інпута */
+#page-content .select-wrapper .btn-refresh-inline,
+#page-content .select-wrapper button.btn-refresh-inline {
+    position: absolute !important;
+    right: 8px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 34px !important;
+    height: 34px !important;
+    border: 1px solid #3a506b !important;
+    border-radius: 8px !important;
+    background: #1c2541 !important; /* Темний фон картки */
+    font-size: 14px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 10 !important;
+    transition: all 0.2s ease !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#page-content .select-wrapper .btn-refresh-inline:hover {
+    background: #3a506b !important;
+    border-color: #38bdf8 !important;
+}
+#page-content .pin-field {
+    text-align: center;
+    letter-spacing: 6px;
+    font-weight: 700;
+}
+
+/* ---------- КНОПКА НАЗАД ---------- */
+#page-content .btn-back,
+#page-content button.btn-back,
+#page-content a[id="backToMain"],
+#page-content a[href*="index.html"] {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    text-align: center !important;
+    margin: 20px auto 0 auto !important;
+    color: #64748b !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: color 0.2s ease !important;
+    outline: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
+
+#page-content .btn-back:hover,
+#page-content button.btn-back:hover {
+    color: #38bdf8 !important;
+    background: none !important;
+}
+
+#page-content hr {
+    border: 0;
+    height: 1px;
+    background: #3a506b;
+    margin: 24px 0;
+    width: 100%;
+}
+
+/* ---------- СТАТУСИ ТА КВИТКИ РЕЗУЛЬТАТУ ---------- */
+#page-content #message,
+#page-content .alert-box {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#page-content .success { 
+    background: rgba(22, 101, 52, 0.25); 
+    color: #34d399; 
+    border: 1px solid #166534;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#page-content .error { 
+    background: rgba(153, 27, 27, 0.25); 
+    color: #f87171; 
+    border: 1px solid #991b1b;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#page-content #result-card h3 {
+    color: #10b981 !important;
+    margin-bottom: 15px !important;
+    font-size: 20px !important;
+}
+
+#page-content .ticket-box {
+    background: #1c2541 !important;
+    border: 1px solid #3a506b !important;
+    padding: 15px !important;
+    border-radius: 12px !important;
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    letter-spacing: 1px !important;
+    margin: 15px 0 !important;
+}
+
+/* ---------- 4. СТИЛІЗАЦІЯ ТАБЛИЦЬ ---------- */
+#page-content table, 
+#page-content .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: #0b1329;
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+#page-content th {
+    background: #1c2541;
+    color: #38bdf8;
+    font-weight: 600;
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 2px solid #3a506b;
+}
+
+#page-content td {
+    padding: 12px 10px;
+    color: #cbd5e1;
+    border-bottom: 1px solid #1c2541;
+}
+
+#page-content tr:last-child td {
+    border-bottom: none;
+}
+
+#page-content tr:hover td {
+    background: rgba(56, 189, 248, 0.05);
+}
+/* ---------- СТИЛІ ДЛЯ ЖУРНАЛУ ТМЦ (КЛАСНИЙ ІЗОЛЬОВАНИЙ ДИЗАЙН) ---------- */
+#page-content .tmc-item-row {
+    position: relative !important;
+    background: #0b1329 !important;
+    border: 1px solid #3a506b !important;
+    border-radius: 16px !important;
+    padding: 24px 16px 16px 16px !important;
+    margin-bottom: 16px !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+}
+
+#page-content .tmc-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+}
+
+#page-content .tmc-name1 {
+    width: 100% !important;
+}
+
+#page-content .tmc-row-2cols {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+}
+
+#page-content .tmc-row-2cols-qty {
+    display: grid !important;
+    grid-template-columns: 1fr 100px !important;
+    gap: 12px !important;
+}
+
+/* Витончена іконка видалення позиції на кутку контейнера */
+#page-content .btn-remove-item {
+    position: absolute !important;
+    top: -10px !important;
+    right: -10px !important;
+    width: 26px !important;
+    height: 26px !important;
+    background: #1c2541 !important;
+    border: 1px solid #3a506b !important;
+    border-radius: 50% !important;
+    color: #64748b !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    z-index: 15 !important;
+    padding: 0 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4) !important;
+}
+
+#page-content .btn-remove-item:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: #ef4444 !important;
+    color: #f87171 !important;
+    transform: scale(1.1) !important;
+}
+
+/* Кнопка додавання нового товару */
+#page-content .btn-add-item {
+    width: 100% !important;
+    padding: 14px !important;
+    background: rgba(56, 189, 248, 0.05) !important;
+    border: 1px dashed #3a506b !important;
+    border-radius: 12px !important;
+    color: #38bdf8 !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin-top: 8px !important;
+}
+
+#page-content .btn-add-item:hover {
+    background: rgba(56, 189, 248, 0.1) !important;
+    border-color: #38bdf8 !important;
+    color: #ffffff !important;
+}
+
+/* Головна кнопка дії БЕЗ тексту заніс/виніс (чистий суцільний стиль) */
+#page-content #submit-action {
+    width: 100% !important;
+    height: 52px !important;
+    background: #38bdf8 !important;
+    color: #0b1329 !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3) !important;
+    margin-top: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#page-content #submit-action:hover {
+    background: #0ea5e9 !important;
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5) !important;
+}
+
+@media (max-width: 600px) {
+    #page-content .tmc-row-2cols,
+    #page-content .tmc-row-2cols-qty {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+}

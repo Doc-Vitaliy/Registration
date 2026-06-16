@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель охорони | Admin DC-Link</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0b1329;
+            background-image: radial-gradient(circle at 50% 50%, #1c2541 0%, #0b1329 100%);
+            background-attachment: fixed;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .dashboard-container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            background: rgba(28, 37, 65, 0.9);
+            border: 1px solid #3a506b;
+            border-radius: 20px;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .header h1 { font-size: 22px; font-weight: 700; color: #38bdf8; }
+        .header-actions { display: flex; align-items: center; gap: 16px; }
+        .header .user-info { font-size: 16px; color: #94a3b8; font-weight: 500; }
+        .header .logout-btn {
+            background: none;
+            border: 1px solid #ef4444;
+            color: #f87171;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .header .logout-btn:hover { background: #ef4444; color: white; }
+        
+        .menu-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .tab-menu {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: rgba(28, 37, 65, 0.6);
+            padding: 8px;
+            border-radius: 16px;
+            flex: 1;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: #1c2541;
+            border: 1px solid #3a506b;
+            border-radius: 40px;
+            color: #94a3b8;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            background: #38bdf8;
+            color: #0b1329;
+            border-color: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        }
+        .tab-btn:hover:not(.active) { background: #3a506b; color: #ffffff; }
+        
+        .refresh-tab-btn {
+            padding: 10px 20px;
+            background: #1c2541;
+            border: 1px solid #38bdf8;
+            border-radius: 40px;
+            color: #38bdf8;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .refresh-tab-btn:hover { background: #38bdf8; color: #0b1329; }
+
+        .table-wrapper {
+            background: rgba(28, 37, 65, 0.6);
+            border: 1px solid #3a506b;
+            border-radius: 20px;
+            padding: 24px;
+            overflow-x: auto;
+            width: 100%;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 auto; }
+        th { background: #1c2541; color: #38bdf8; padding: 14px 12px; text-align: left; border-bottom: 2px solid #3a506b; font-weight: 600; }
+        td { padding: 14px 12px; color: #cbd5e1; border-bottom: 1px solid #1c2541; vertical-align: middle; }
+        tr:hover td { background: rgba(56, 189, 248, 0.04); }
+		/* Контейнер для Канбан-дошки */
+		.kanban-board {
+			display: flex;
+			gap: 10px;
+			width: 100%;
+			margin-top: 15px;
+			min-height: 70vh;
+			overflow: hidden;
+		}
+
+		/* Стовпчики дошки */
+		.kanban-column {
+			background: rgba(30, 41, 59, 0.6);
+			border: 1px solid #334155;
+			border-radius: 12px;
+			padding: 12px;
+			box-sizing: border-box;
+			transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+			cursor: pointer;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.kanban-column.active-col {
+			flex: 0 0 70%;
+			cursor: default;
+		}
+		.kanban-column.passive-col {
+			flex: 0 0 14%;
+		}
+
+		.kanban-column h3 {
+			margin-top: 0;
+			margin-bottom: 12px;
+			font-size: 13px;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			white-space: nowrap;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding-bottom: 8px;
+			border-bottom: 2px solid #334155;
+			color: #cbd5e1;
+		}
+
+		.column-count {
+			background: #1e293b;
+			padding: 2px 8px;
+			border-radius: 20px;
+			font-size: 11px;
+			border: 1px solid #475569;
+		}
+
+		/* Тіло стовпчика ховається, якщо він стиснутий до 15% */
+		.column-body {
+			flex: 1;
+			overflow-y: auto;
+			transition: opacity 0.3s ease;
+		}
+		.kanban-column.passive-col .column-body {
+			opacity: 1;
+			pointer-events: auto;
+			overflow-y: auto;
+		}
+
+		/* Коли колонка згорнута, робимо картки всередині неї вузькими «смужками» */
+		.kanban-column.passive-col .auto-card {
+			padding: 6px 8px;
+			height: auto; /* дозволяємо підлаштуватися під висоту рядка */
+			margin-bottom: 5px;
+			background: rgba(30, 41, 59, 0.9);
+			box-shadow: none;
+			border-width: 1px 1px 1px 3px; /* трохи тонша лінія статусу */
+		}
+		/* Ховаємо іконки та значки у згорнутих картках */
+		.kanban-column.passive-col .auto-card .card-header {
+			display: flex !important;
+			font-size: 11px !important; /* робимо компактним, щоб влізало по ширині */
+			color: #cbd5e1;
+			white-space: nowrap;
+			justify-content: space-between;
+		}
+		.kanban-column.passive-col .auto-card .card-row,
+		.kanban-column.passive-col .auto-card .card-details,
+		.kanban-column.passive-col .auto-card .card-actions {
+			display: none !important;
+		}
+
+		/* КОМПАКТНА КАРТКА АВТО */
+		.auto-card {
+			background: #1e293b;
+			border-left: 4px solid #64748b;
+			border-top: 1px solid #334155;
+			border-right: 1px solid #334155;
+			border-bottom: 1px solid #334155;
+			border-radius: 8px;
+			padding: 8px 10px;
+			margin-bottom: 8px;
+			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+			font-size: 18px;
+			color: #e2e8f0;
+			transition: all 0.3s ease;
+			position: relative;
+			overflow: hidden;
+		}
+
+		/* Кольори статусів */
+		.card-waiting { border-left-color: #f59e0b; }
+		.card-approved { border-left-color: #10b981; }
+		.card-ramp { border-left-color: #3b82f6; }
+		.card-done { border-left-color: #8b5cf6; opacity: 0.8; }
+		.card-rejected { border-left-color: #ef4444; opacity: 0.8; }
+
+		.card-header {
+			display: flex;
+			justify-content: space-between;
+			font-weight: bold;
+			color: #fff;
+			margin-bottom: 2px;
+		}
+
+		/* Прихований блок деталей */
+		.card-details {
+			max-height: 0;
+			opacity: 0;
+			transition: all 0.35s ease;
+			border-top: 1px dashed transparent;
+			margin-top: 0;
+			padding-top: 0;
+		}
+
+		/* РОЗГОРТАННЯ КАРТКИ ПРИ НАВЕДЕННІ */
+		.auto-card:hover {
+			background: #24324d;
+			box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+		}
+		.auto-card:hover .card-details {
+			max-height: 250px; /* достатньо для всього контенту */
+			opacity: 1;
+			border-top-color: #334155;
+			margin-top: 6px;
+			padding-top: 6px;
+		}
+			.auto-card .card-row[style*="font-size:13px"] {
+		font-size: 18px !important; /* збільшуємо номер машини */
+		}
+
+		.card-row {
+			margin-bottom: 5px;
+			line-height: 1.4;
+			ont-size: 15px
+		}
+		
+		.card-label { 
+		color: #94a3b8;
+		font-size: 13px;
+		margin-right: 6px; 
+		}
+
+		.card-ramp-badge {
+			background: #2563eb;
+			color: white;
+			padding: 1px 5px;
+			border-radius: 4px;
+			font-weight: bold;
+		}
+
+		.card-actions {
+			display: flex;
+			gap: 4px;
+			margin-top: 8px;
+			justify-content: flex-end;
+		}
+
+		.card-btn {
+			border: none;
+			padding: 6px 12px;
+			border-radius: 6px;
+			cursor: pointer;
+			font-weight: bold;
+			font-size: 14px;
+			color: #fff;
+		}
+        
+        .btn-action {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-confirm { background: #10b981; color: white; }
+        .btn-reject { background: #ef4444; color: white; }
+        .btn-shipping { background: #f97316; color: white; }
+        .btn-confirm:hover { background: #059669; }
+        .btn-reject:hover { background: #dc2626; }
+        .btn-shipping:hover { background: #ea580c; }
+        
+        .ramp-select {
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: #0b1329;
+            border: 1px solid #3a506b;
+            color: white;
+            margin-right: 8px;
+            outline: none;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-awaiting { background: #f59e0b20; color: #fbbf24; border: 1px solid #f59e0b; }
+        .status-confirmed { background: #10b98120; color: #34d399; border: 1px solid #10b981; }
+        .status-shipping { background: #3b82f620; color: #60a5fa; border: 1px solid #3b82f6; }
+        .status-rejected { background: #ef444420; color: #f87171; border: 1px solid #ef4444; }
+        
+        .message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .message.success { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
+        .message.error { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+        
+        @media (max-width: 1024px) {
+            .menu-container { flex-direction: column; align-items: stretch; }
+            .refresh-tab-btn { justify-content: center; }
+        }
+        @media (max-width: 768px) {
+            .header { flex-direction: column; gap: 12px; text-align: center; }
+            .header-actions { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard-container">
+    <div class="header">
+        <h1>Панель охорони DC-Link</h1>
+        <div class="header-actions">
+            <div class="user-info">Охоронець: <span id="admin-name">---</span></div>
+            <button class="logout-btn" onclick="logout()">Вихід</button>
+        </div>
+    </div>
+
+    <div class="menu-container" style="margin-bottom: 15px;">
+        <div class="tab-menu">
+            <button class="tab-btn" data-tab="loading" onclick="loadLog('loading', this)">Завантаження</button>
+            <button class="tab-btn" data-tab="unloading" onclick="loadLog('unloading', this)">Вивантаження</button>
+            <button class="tab-btn" data-tab="tmc" onclick="loadLog('tmc', this)">ТМЦ</button>
+            <button class="tab-btn" data-tab="visitors" onclick="loadLog('visitors', this)">Відвідувачі</button>
+            <button class="tab-btn" data-tab="order_pickup" onclick="loadLog('order_pickup', this)">Замовлення</button>
+            <button class="tab-btn" data-tab="workers" onclick="loadLog('workers', this)">Персонал</button>
+            <button class="tab-btn" data-tab="passes" onclick="loadLog('passes', this)">Перепустки</button>
+            <button class="tab-btn" data-tab="keys" onclick="loadLog('keys', this)">Ключі</button>
+        </div>
+        <button class="refresh-tab-btn" onclick="refreshCurrentTab()">🔄 Оновити дані</button>
+    </div>
+
+    <div id="filter-panel" style="background: rgba(28, 37, 65, 0.8); border: 1px solid #3a506b; border-radius: 16px; padding: 12px 20px; margin-bottom: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px; color: #94a3b8; font-weight: 600;">Період з:</span>
+            <input type="date" id="filter-date-start" onchange="applyFiltersAndSort()" style="padding: 6px 12px; background: #0b1329; border: 1px solid #3a506b; border-radius: 8px; color: white; outline: none;">
+            <span style="font-size: 14px; color: #94a3b8; font-weight: 600;">по:</span>
+            <input type="date" id="filter-date-end" onchange="applyFiltersAndSort()" style="padding: 6px 12px; background: #0b1329; border: 1px solid #3a506b; border-radius: 8px; color: white; outline: none;">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px; color: #94a3b8; font-weight: 600;">Сортування:</span>
+            <select id="filter-sort-order" onchange="applyFiltersAndSort()" style="padding: 6px 12px; background: #0b1329; border: 1px solid #3a506b; border-radius: 8px; color: white; outline: none; cursor: pointer;">
+                <option value="desc">Спочатку нові (⬇️)</option>
+                <option value="asc">Спочатку старі (⬆️)</option>
+            </select>
+        </div>
+
+        <div id="debtors-only-wrapper" style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+            <input type="checkbox" id="filter-debtors-only" onchange="applyFiltersAndSort()" style="width: 18px; height: 18px; cursor: pointer; accent-color: #38bdf8;">
+            <label for="filter-debtors-only" style="font-size: 14px; color: #f59e0b; font-weight: 700; cursor: pointer; user-select: none;">⚠️ Тільки Боржники</label>
+        </div>
+    </div>
+
+    <div id="table-container" class="table-wrapper">
+        <p style="text-align:center; padding:40px;">Оберіть журнал для перегляду</p>
+    </div>
+</div>
+
+<script>
+    let API_URL = null;
+    let currentAdmin = null;
+    let rampsList = [];
+
+    async function getApiUrl() {
+        if (API_URL) return API_URL;
+        let url = localStorage.getItem('apps_script_url');
+        if (!url) {
+            url = prompt("Вставте посилання на Google Apps Script (Web App URL):");
+            if (url && url.includes("script.google.com")) {
+                localStorage.setItem('apps_script_url', url);
+            } else if (url) {
+                alert("Невірне посилання");
+                return null;
+            }
+        }
+        API_URL = url;
+        return API_URL;
+    }
+
+    async function loadRamps() {
+        const url = await getApiUrl();
+        if (!url) return [];
+        try {
+            const resp = await fetch(`${url}?action=get_ramps`);
+            const contentType = resp.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const ramps = await resp.json();
+                rampsList = Array.isArray(ramps) ? ramps : [];
+            } else {
+                console.warn("Бекенд не повернув JSON для рамп. Перевірте реалізацію action=get_ramps");
+                rampsList = [];
+            }
+            return rampsList;
+        } catch(e) { console.error("Помилка завантаження рамп:", e); return []; }
+    }
+
+    let originalData = [];
+    let currentTabType = 'loading';
+
+    function setDefaultWeekPeriod() {
+        const now = new Date();
+        const currentDay = now.getDay();
+        const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + distanceToMonday);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        const formatISODate = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        document.getElementById('filter-date-start').value = formatISODate(monday);
+        document.getElementById('filter-date-end').value = formatISODate(sunday);
+    }
+
+    window.loadLog = async function(type, btnElement) {
+        if (!currentAdmin) {
+            const saved = sessionStorage.getItem('current_admin');
+            if (!saved) { window.location.href = 'admin.html'; return; }
+            currentAdmin = JSON.parse(saved);
+            document.getElementById('admin-name').innerText = currentAdmin.name;
+        }
+        if (btnElement) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+        currentTabType = type;
+        const debtorsBox = document.getElementById('debtors-only-wrapper');
+        if (debtorsBox) {
+            debtorsBox.style.display = (type === 'keys' || type === 'passes' || type === 'workers' || type === 'visitors' || type === 'tmc') ? 'flex' : 'none';
+        }
+        const container = document.getElementById('table-container');
+        container.innerHTML = '<p style="text-align:center;">⏳ Завантаження даних...</p>';
+        const url = await getApiUrl();
+        if (!url) { container.innerHTML = '<p class="message error">API не налаштовано</p>'; return; }
+        try {
+            const response = await fetch(`${url}?logType=${type}`);
+            originalData = await response.json();
+            applyFiltersAndSort();
+        } catch(err) {
+            container.innerHTML = `<p class="message error">Помилка завантаження журналу: ${err.message}</p>`;
+        }
+    };
+
+    function applyFiltersAndSort() {
+        if (!originalData || originalData.length === 0) {
+            renderTable([], currentTabType);
+            return;
+        }
+        let processedData = [...originalData];
+        const columns = Object.keys(processedData[0]);
+        const dateKey = columns.find(k => k.toLowerCase().includes('дата') || k.toLowerCase().includes('date'));
+        const timeKey = columns.find(k => k.toLowerCase().includes('час') || k.toLowerCase().includes('time'));
+        const keyCodeKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('ключа') || k.toLowerCase().includes('code'));
+        const actionKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('дія') || k.toLowerCase().includes('type'));
+
+        const parseRowDateTime = (row) => {
+            if (!dateKey) return new Date(0);
+            let datePart = String(row[dateKey]).trim().split(' ')[0];
+            let timePart = "00:00:00";
+            if (timeKey && row[timeKey]) {
+                timePart = String(row[timeKey]).trim();
+                if (timePart.includes(' ')) timePart = timePart.split(' ')[1];
+                timePart = timePart.split('.')[0];
+            }
+            if (datePart.includes('.')) {
+                let p = datePart.split('.');
+                return new Date(`${p[2]}-${p[1]}-${p[0]}T${timePart}`);
+            } else if (datePart.includes('-')) {
+                return new Date(`${datePart.split('T')[0]}T${timePart}`);
+            }
+            return new Date(0);
+        };
+
+        // Фільтр по датах
+        const startVal = document.getElementById('filter-date-start').value;
+        const endVal = document.getElementById('filter-date-end').value;
+        if (dateKey && (startVal || endVal)) {
+            const startDate = startVal ? new Date(startVal + "T00:00:00") : null;
+            const endDate = endVal ? new Date(endVal + "T23:59:59") : null;
+            processedData = processedData.filter(row => {
+                let rowDateStr = String(row[dateKey]).trim().split(' ')[0];
+                if (!rowDateStr) return false;
+                let rowDateObj = null;
+                if (rowDateStr.includes('.')) {
+                    let parts = rowDateStr.split('.');
+                    rowDateObj = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`);
+                } else {
+                    rowDateObj = new Date(rowDateStr.split('T')[0] + "T00:00:00");
+                }
+                if (isNaN(rowDateObj.getTime())) return true;
+                if (startDate && rowDateObj < startDate) return false;
+                if (endDate && rowDateObj > endDate) return false;
+                return true;
+            });
+        }
+
+        // Сортування
+        processedData.sort((a, b) => {
+            let dateTimeA = parseRowDateTime(a);
+            let dateTimeB = parseRowDateTime(b);
+            const sortOrder = document.getElementById('filter-sort-order').value;
+            return sortOrder === 'desc' ? dateTimeB - dateTimeA : dateTimeA - dateTimeB;
+        });
+
+        // Боржники
+        const debtorsOnly = document.getElementById('filter-debtors-only').checked;
+        if (debtorsOnly && (currentTabType === 'keys' || currentTabType === 'passes' || currentTabType === 'workers' || currentTabType === 'visitors')) {
+            const currentActionKey = columns.find(k => {
+                const low = k.toLowerCase();
+                return low.includes('дія') || low.includes('операція') || low.includes('action');
+            });
+            let idGroupKey = null;
+            if (currentTabType === 'keys') {
+                idGroupKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('ключ'));
+            } else if (currentTabType === 'passes') {
+                idGroupKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('перепуст') || k.toLowerCase().includes('pass_id'));
+            } else if (currentTabType === 'workers' || currentTabType === 'visitors') {
+                idGroupKey = columns.find(k => k.toLowerCase().includes('піб') || k.toLowerCase().includes('відвідувач') || k.toLowerCase().includes('worker'));
+            }
+            if (idGroupKey && currentActionKey) {
+                let chronologicalData = [...processedData];
+                chronologicalData.sort((a, b) => parseRowDateTime(a) - parseRowDateTime(b));
+                const latestStatusMap = {};
+                chronologicalData.forEach(row => {
+                    const itemId = String(row[idGroupKey]).trim();
+                    if (itemId) {
+                        latestStatusMap[itemId] = row;
+                    }
+                });
+                processedData = Object.values(latestStatusMap).filter(row => {
+                    let act = row[currentActionKey] ? String(row[currentActionKey]).trim().toUpperCase() : "";
+                    return act === 'ВЗЯВ' || act === 'ВИДАНО' || act === 'ВХІД';
+                });
+                const sortOrder = document.getElementById('filter-sort-order').value;
+                processedData.sort((a, b) => {
+                    let dateTimeA = parseRowDateTime(a);
+                    let dateTimeB = parseRowDateTime(b);
+                    return sortOrder === 'desc' ? dateTimeB - dateTimeA : dateTimeA - dateTimeB;
+                });
+            }
+        }
+
+        renderTable(processedData, currentTabType);
+    }
+
+    // ======================== ВИПРАВЛЕНА ФУНКЦІЯ renderTable ========================
+    function renderTable(data, type) {
+        const container = document.getElementById('table-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // --- Для Завантаження / Вивантаження – КАНБАН-ДОШКА ---
+        if (type === 'loading' || type === 'unloading') {
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="no-data">🚗 Активних автомобілів не знайдено</div>';
+                return;
+            }
+            const board = document.createElement('div');
+            board.className = 'kanban-board';
+            board.innerHTML = `
+                <div class="kanban-column active-col" id="col_queue" onclick="activateKanbanColumn('col_queue')">
+                    <h3>⏳ Черга / Очікування <span class="column-count" id="cnt_queue">0</span></h3>
+                    <div class="column-body"></div>
+                </div>
+                <div class="kanban-column passive-col" id="col_progress" onclick="activateKanbanColumn('col_progress')">
+                    <h3>🚚 На рампах <span class="column-count" id="cnt_progress">0</span></h3>
+                    <div class="column-body"></div>
+                </div>
+                <div class="kanban-column passive-col" id="col_archive" onclick="activateKanbanColumn('col_archive')">
+                    <h3>🏁 Архів операцій <span class="column-count" id="cnt_archive">0</span></h3>
+                    <div class="column-body"></div>
+                </div>
+            `;
+           container.appendChild(board);
+            const bodyQueue = board.querySelector('#col_queue .column-body');
+            const bodyProgress = board.querySelector('#col_progress .column-body');
+            const bodyArchive = board.querySelector('#col_archive .column-body');
+            let cQueue = 0, cProgress = 0, cArchive = 0;
+
+            data.forEach(row => {
+                // Створюємо тимчасовий об'єкт, очищений від випадкових крайових пробілів у ключах Excel
+                const cleanRow = {};
+                Object.keys(row).forEach(k => { cleanRow[k.trim()] = row[k]; });
+
+                // Залізобетонне зчитування полів точно за назвами твоїх колонок
+                const id = cleanRow['№'] || cleanRow['ID'] || '';
+                const status = String(cleanRow['Статус'] || 'В очікуванні').trim();
+                const rawRegTime = cleanRow['Час регістрації'] || cleanRow['Дата'] || '';
+                
+                const driver = cleanRow['ПІБ Водія'] || cleanRow['ПІБ водія'] || '';
+                const car = cleanRow['Авто / номер'] || cleanRow['Авто номер'] || '';
+                const phone = cleanRow['Телефон'] || '';
+                const company = cleanRow['Компанія'] || '';
+                
+                // Враховуємо ТТН ПН Дос на Вивантаженні та ТТН/ПН/Дос на Завантаженні
+                const ttn = cleanRow['ТТН ПН Дос'] || cleanRow['ТТН/ПН/Дос'] || cleanRow['ТТН/ДОС'] || '';
+                
+                const rampa = cleanRow['Рампа'] || '';
+                const lastAction = cleanRow['Хто підтвердив / Дія'] || '';
+                
+                // Специфікація вивантаження
+                const group = cleanRow['Група товара'] || cleanRow['Група товару'] || '';
+                const vType = cleanRow['Тип'] || '';
+                const volume = cleanRow['Обем'] || cleanRow['Об\'єм'] || '';
+
+                let shortTime = String(rawRegTime);
+                if (shortTime.includes('.') && shortTime.includes(':')) {
+                    try {
+                        let parts = shortTime.split(' ');
+                        let dateParts = parts[0].split('.');
+                        let timeParts = parts[1].split(':');
+                        shortTime = `${dateParts[0]}.${dateParts[1]} ${timeParts[0]}:${timeParts[1]}`;
+                    } catch(e) {}
+                }
+
+                let cardClass = 'auto-card';
+                if (status === 'В очікуванні') cardClass += ' card-waiting';
+                else if (status === 'Погоджено') cardClass += ' card-approved';
+                else if (status === 'Поставили до рампи') cardClass += ' card-ramp';
+                else if (status === 'Завершено') cardClass += ' card-done';
+                else if (status === 'Відхилено') cardClass += ' card-rejected';
+
+                let cardHtml = `
+                    <div class="${cardClass}" id="card_${id}">
+                        <div class="card-header">
+                            <span>🆔 ${id} &nbsp;|&nbsp; ⏱️ ${shortTime}</span>
+                            <span>${rampa ? '📍 ' + rampa : ''}</span>
+                        </div>
+                        <div class="card-row" style="font-weight:600; color:#fff; font-size:13px;">${car || 'Без номера'}</div>
+                        <div class="card-row" style="color:#cbd5e1;">👤 ${driver || 'Не вказано'}</div>
+                        <div class="card-details">
+                            <div class="card-row"><span class="card-label">📞 Телефон:</span>${phone || '-'}</div>
+                            <div class="card-row"><span class="card-label">🏢 Компанія:</span>${company || '-'}</div>
+                            <div class="card-row"><span class="card-label">📄 Документ/ТТН:</span>${ttn || '-'}</div>
+                `;
+                if (type === 'unloading' && (group || vType || volume)) {
+                    cardHtml += `<div class="card-row" style="background:rgba(255,255,255,0.04); padding:4px; border-radius:4px; margin:4px 0;"><span class="card-label">Вантаж:</span>${group} [${vType}] - ${volume}м³</div>`;
+                }
+                if (rampa && rampa !== '-') {
+                    cardHtml += `<div class="card-row" style="margin-top:6px;"><span class="card-label">Рампа:</span> <span class="card-ramp-badge">${rampa}</span></div>`;
+                }
+                if (lastAction) {
+                    cardHtml += `<div class="card-row" style="font-size:10px; color:#94a3b8; border-top:1px solid rgba(255,255,255,0.05); padding-top:4px; margin-top:4px;">ℹ️ ${lastAction}</div>`;
+                }
+                cardHtml += `
+                        </div>
+                        <div class="card-actions" id="actions_container_${id}" onclick="event.stopPropagation();">
+                `;
+                if (status !== 'Завершено' && status !== 'Відхилено') {
+                    if (status === 'В очікуванні' || status === '') {
+                        cardHtml += `<button class="card-btn" onclick="changeTransportStatus('${type}', '${id}', 'Погоджено')" style="background:#10b981;">✔️ Впустити</button>`;
+                    }
+                    let rampBtnTxt = (status === 'Поставили до рампи') ? "🔄 Змінити" : "🚚 На рампу";
+                    cardHtml += `<button class="card-btn" onclick="promptRampAssignment('${type}', '${id}')" style="background:#3b82f6;">${rampBtnTxt}</button>`;
+                    if (status === 'Погоджено' || status === 'Поставили до рампи') {
+                        cardHtml += `<button class="card-btn" onclick="changeTransportStatus('${type}', '${id}', 'В очікуванні')" style="background:#64748b;" title="Повернути назад">↩️ Черга</button>`;
+                    }
+                    cardHtml += `<button class="card-btn" onclick="changeTransportStatus('${type}', '${id}', 'Завершено')" style="background:#8b5cf6;">🏁 Закрити</button>`;
+                    cardHtml += `<button class="card-btn" onclick="promptRejectTransport('${type}', '${id}')" style="background:#ef4444;">❌</button>`;
+                } else {
+                    cardHtml += `<span style="color:#64748b; font-style:italic; font-size:11px;">🔒 Архів</span>`;
+                    cardHtml += `<button class="card-btn" onclick="changeTransportStatus('${type}', '${id}', 'В очікуванні')" style="background:#475569; padding:2px 5px; font-size:10px; margin-left:5px;">🔓 Перевідкрити</button>`;
+                }
+                cardHtml += `</div></div>`;
+
+                if (status === 'В очікуванні' || status === 'Погоджено') {
+                    bodyQueue.innerHTML += cardHtml;
+                    cQueue++;
+                } else if (status === 'Поставили до рампи') {
+                    bodyProgress.innerHTML += cardHtml;
+                    cProgress++;
+                } else {
+                    bodyArchive.innerHTML += cardHtml;
+                    cArchive++;
+                }
+            });
+
+            document.getElementById('cnt_queue').innerText = cQueue;
+            document.getElementById('cnt_progress').innerText = cProgress;
+            document.getElementById('cnt_archive').innerText = cArchive;
+            return; // завершуємо функцію для транспортних вкладок
+        }
+
+        // --- ДЛЯ ВСІХ ІНШИХ ВКЛАДОК – ЗВИЧАЙНА ТАБЛИЦЯ (з кнопками дій) ---
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p style="text-align:center; padding: 20px;">Журнал порожній.</p>';
+            return;
+        }
+
+        const columns = Object.keys(data[0]);
+        const idKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('id') || k.trim() === '№') || columns[0];
+        const statusKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('статус') || k.toLowerCase().includes('status'));
+        const rampKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('рампа') || k.toLowerCase().includes('ramp'));
+        const actionKey = columns.find(k => {
+            const low = k.toLowerCase();
+            return low.includes('дія') || low.includes('операція') || low.includes('action');
+        });
+        const roomKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('приміщення') || k.toLowerCase().includes('room'));
+        const keyCodeKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('ключа') || k.toLowerCase().includes('code'));
+        const workerKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('піб') || k.toLowerCase().includes('worker'));
+
+        let html = `<table><thead><tr>`;
+        columns.forEach(colName => {
+            html += `<th>${colName.trim()}</th>`;
+        });
+        if (type === 'auto' || type === 'keys' || type === 'passes' || type === 'visitors' || type === 'tmc') {
+            html += `<th>Дії для охорони</th>`;
+        }
+        html += `</tr></thead><tbody>`;
+
+        data.forEach(row => {
+            html += `<tr>`;
+            columns.forEach(colName => {
+                let val = row[colName] !== undefined ? row[colName] : '';
+                if (typeof val === 'string' && (val.includes('1899') || val.includes('12.1899'))) {
+                    try {
+                        let rawTime = "";
+                        if (val.includes(' ')) {
+                            rawTime = val.split(' ')[1];
+                        } else if (val.includes('T')) {
+                            rawTime = val.split('T')[1].split('.')[0].split('+')[0];
+                        }
+                        if (rawTime && rawTime.includes(':')) {
+                            let parts = rawTime.split(':');
+                            let hours = parseInt(parts[0], 10);
+                            let minutes = parseInt(parts[1], 10);
+                            let seconds = parseInt(parts[2], 10) || 0;
+                            let totalMinutes = hours * 60 + minutes - 58;
+                            if (totalMinutes < 0) totalMinutes += 24 * 60;
+                            let correctHours = Math.floor(totalMinutes / 60);
+                            let correctMinutes = totalMinutes % 60;
+                            val = `${String(correctHours).padStart(2, '0')}:${String(correctMinutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                        }
+                    } catch(e) { console.error("Помилка форматування часу:", e); }
+                }
+                if (statusKey && colName === statusKey) {
+                    let statusClass = '';
+                    if (val === 'Очікує') statusClass = 'status-awaiting';
+                    else if (val === 'Підтверджено') statusClass = 'status-confirmed';
+                    else if (val === 'На вивантаженні') statusClass = 'status-shipping';
+                    else if (val === 'Відхилено') statusClass = 'status-rejected';
+                    html += `<td><span class="status-badge ${statusClass}">${val || 'Очікує'}</span></td>`;
+                } else if (actionKey && colName === actionKey) {
+                    let strVal = String(val).trim().toUpperCase();
+                    let actionStyle = strVal === 'ВЗЯВ' ? 'color:#f59e0b; font-weight:600;' : 'color:#10b981; font-weight:600;';
+                    html += `<td style="${actionStyle}">${val}</td>`;
+                } else if (rampKey && colName === rampKey) {
+                    html += `<td style="color: #38bdf8; font-weight: 600;">${val || '-'}</td>`;
+                } else {
+                    html += `<td>${val}</td>`;
+                }
+            });
+
+            // КНОПКИ ДІЙ
+            if (type === 'keys') {
+                let currentAction = actionKey && row[actionKey] ? String(row[actionKey]).trim().toUpperCase() : "";
+                html += `<td>`;
+                if (currentAction === 'ВЗЯВ' && roomKey && keyCodeKey && workerKey) {
+                    let encRoom = encodeURIComponent(row[roomKey] || "");
+                    let encCode = encodeURIComponent(row[keyCodeKey] || "");
+                    let encWorker = encodeURIComponent(row[workerKey] || "");
+                    html += `<button class="btn-action" style="background:#f59e0b; color:#0b1329; font-weight:700; border-radius:8px; padding:6px 12px; cursor:pointer;" onclick="returnKey('${encRoom}','${encCode}','${encWorker}')">🔑 Здати ключ</button>`;
+                } else {
+                    html += `<span style="color:#10b981; font-size:12px; font-weight:600;">Повернуто</span>`;
+                }
+                html += `</td>`;
+            } else if (type === 'passes') {
+                const passIdKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('перепуст') || k.toLowerCase().includes('pass_id'));
+                let currentAction = actionKey && row[actionKey] ? String(row[actionKey]).trim().toUpperCase() : "";
+                html += `<td>`;
+                if (currentAction === 'ВИДАНО' && passIdKey) {
+                    let passNum = encodeURIComponent(row[passIdKey] || "");
+                    html += `<button class="btn-action" style="background:#ef4444; color:white; font-weight:700; border-radius:8px; padding:6px 12px; cursor:pointer;" onclick="returnPassDirect('${passNum}')">🪪 Повернути</button>`;
+                } else {
+                    html += `<span style="color:#10b981; font-size:12px; font-weight:600;">Повернуто</span>`;
+                }
+                html += `</td>`;
+            } else if (type === 'visitors') {
+                const visitorKey = columns.find(k => k.toLowerCase().includes('відвідувач'));
+                const exitKey = columns.find(k => k.toLowerCase().includes('вихід'));
+                html += `<td>`;
+                if (visitorKey && exitKey) {
+                    let hasExit = row[exitKey] && String(row[exitKey]).trim() !== "" && !String(row[exitKey]).includes('1899');
+                    if (!hasExit) {
+                        let encVisitor = encodeURIComponent(row[visitorKey] || "");
+                        html += `<button class="btn-action" style="background:#f43f5e; color:white; font-weight:700; border-radius:8px; padding:6px 12px; cursor:pointer;" onclick="closeVisitorExit('${encVisitor}')">🚶 Зафіксувати вихід</button>`;
+                    } else {
+                        html += `<span style="color:#10b981; font-size:13px; font-weight:600;">✅ Вийшов</span>`;
+                    }
+                } else {
+                    html += `<span style="color:#64748b; font-size:11px;">Немає потрібних колонок</span>`;
+                }
+                html += `</td>`;
+            } else if (type === 'tmc') {
+                const dateKey = columns.find(k => k.toLowerCase().includes('дата'));
+                const pibKey = columns.find(k => k.toLowerCase().includes('піб'));
+                const itemKey = columns.find(k => k.toLowerCase().includes('позиція') || k.toLowerCase().includes('назва'));
+                const skladKey = columns.find(k => k.toLowerCase().replace(/\s+/g, '').includes('наскладі'));
+                html += `<td>`;
+                if (skladKey && row[skladKey]) {
+                    let onSklad = String(row[skladKey]).trim().toLowerCase() === 'так';
+                    if (onSklad && dateKey && pibKey) {
+                        let encDate = encodeURIComponent(row[dateKey] || "");
+                        let encPib = encodeURIComponent(row[pibKey] || "");
+                        let encItem = encodeURIComponent(row[itemKey] || "");
+                        html += `<button class="btn-action" style="background:#f59e0b; color:#0b1329; font-weight:700; border-radius:8px; padding:6px 12px; cursor:pointer;" onclick="changeTmcSkladStatus('${encDate}','${encPib}','${encItem}')">📦 Списати (Ні)</button>`;
+                    } else {
+                        html += `<span style="color:#64748b; font-size:12px; font-weight:600;">Винесено (Ні)</span>`;
+                    }
+                } else {
+                    html += `<span style="color:#64748b; font-size:11px;">-</span>`;
+                }
+                html += `</td>`;
+            }
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    // ======================== ІНШІ ФУНКЦІЇ (returnKey, returnPassDirect, closeVisitorExit, changeTmcSkladStatus, changeTransportStatus, promptRampAssignment, promptRejectTransport, refreshCurrentTabSilent, activateKanbanColumn, refreshCurrentTab, logout) ========================
+
+    window.updateAutoStatus = async function(id, newStatus) {
+        if (!currentAdmin) {
+            const saved = sessionStorage.getItem('current_admin');
+            if (!saved) { window.location.href = 'admin.html'; return; }
+            currentAdmin = JSON.parse(saved);
+        }
+        let ramp = "";
+        if (newStatus === "Підтверджено") {
+            const select = document.getElementById(`ramp_${id}`);
+            if (!select) { alert("Помилка: не знайдено вибір рампи"); return; }
+            ramp = select.value;
+            if (!ramp) { alert("Оберіть рампу"); return; }
+        }
+        const url = new URL(await getApiUrl());
+        url.searchParams.append('action', 'update_auto_status');
+        url.searchParams.append('id', id);
+        url.searchParams.append('status', newStatus);
+        url.searchParams.append('ramp', ramp);
+        url.searchParams.append('admin', currentAdmin.name);
+        try {
+            const resp = await fetch(url.toString());
+            const result = await resp.json();
+            if (result.status === "success") {
+                alert(`Статус змінено на "${newStatus}"`);
+                loadLog('auto', document.querySelector('.tab-btn.active'));
+            } else throw new Error(result.message);
+        } catch(e) { alert("Помилка: " + e.message); }
+    };
+
+    window.returnKey = async function(encodedRoom, encodedCode, encodedWorker) {
+        if (!currentAdmin) {
+            const saved = sessionStorage.getItem('current_admin');
+            if (!saved) { window.location.href = 'admin.html'; return; }
+            currentAdmin = JSON.parse(saved);
+        }
+        const room = decodeURIComponent(encodedRoom);
+        const code = decodeURIComponent(encodedCode);
+        const worker = decodeURIComponent(encodedWorker);
+        if (!confirm(`Підтверджуєте здачу ключа від: "${room}" (Працівник: ${worker})?`)) {
+            return;
+        }
+        const url = new URL(await getApiUrl());
+        url.searchParams.append('action', 'reg_keys');
+        url.searchParams.append('key_name', room);
+        url.searchParams.append('key_code', code);
+        url.searchParams.append('worker', worker);
+        url.searchParams.append('type', 'ЗДАВ');
+        url.searchParams.append('guard', currentAdmin.name);
+        try {
+            const resp = await fetch(url.toString());
+            const result = await resp.json();
+            if (result.status === "success") {
+                alert(`Ключ від приміщення "${room}" успішно здано!`);
+                loadLog('keys', document.querySelector('.tab-btn.active'));
+            } else {
+                throw new Error(result.message);
+            }
+        } catch(e) {
+            alert("Помилка при здачі ключа: " + e.message);
+        }
+    };
+
+    window.returnPassDirect = async function(encodedPassNum) {
+        if (!currentAdmin) {
+            const saved = sessionStorage.getItem('current_admin');
+            if (!saved) { window.location.href = 'admin.html'; return; }
+            currentAdmin = JSON.parse(saved);
+        }
+        const passNum = decodeURIComponent(encodedPassNum);
+        if (!confirm(`Підтверджуєте повернення перепустки №${passNum}?`)) {
+            return;
+        }
+        const apiUrl = await getApiUrl();
+        if (!apiUrl) { alert("API не налаштовано"); return; }
+        const url = new URL(apiUrl);
+        url.searchParams.append('action', 'return_pass');
+        url.searchParams.append('pass_id', passNum);
+        url.searchParams.append('issued_by', currentAdmin.name);
+        try {
+            const resp = await fetch(url.toString());
+            const result = await resp.json();
+            if (result.status === "success") {
+                alert(`✅ Перепустку №${passNum} успішно повернуто!`);
+                loadLog('passes', document.querySelector('.tab-btn.active'));
+            } else {
+                throw new Error(result.message);
+            }
+        } catch(e) {
+            alert("❌ Помилка при поверненні перепустки: " + e.message);
+        }
+    };
+
+    window.closeVisitorExit = async function(encodedVisitor) {
+        if (!currentAdmin) {
+            const saved = sessionStorage.getItem('current_admin');
+            if (!saved) { window.location.href = 'admin.html'; return; }
+            currentAdmin = JSON.parse(saved);
+        }
+        const visitorName = decodeURIComponent(encodedVisitor);
+        if (!confirm(`Підтверджуєте вихід відвідувача: "${visitorName}"?`)) {
+            return;
+        }
+        const url = new URL(await getApiUrl());
+        url.searchParams.append('action', 'reg_visitor');
+        url.searchParams.append('visitor', visitorName);
+        url.searchParams.append('type', 'ВИХІД');
+        url.searchParams.append('guard', currentAdmin.name);
+        try {
+            const resp = await fetch(url.toString());
+            const result = await resp.json();
+            if (result.status === "success") {
+                alert(`✅ Вихід відвідувача "${visitorName}" успішно зафіксовано!`);
+                loadLog('visitors', document.querySelector('.tab-btn.active'));
+            } else {
+                throw new Error(result.message);
+            }
+        } catch(e) {
+            alert("Помилка при фіксації виходу: " + e.message);
+        }
+    };
+
+    window.changeTmcSkladStatus = async function(encodedDate, encodedPib, encodedItem) {
+        if (!currentAdmin) {
+            const saved = sessionStorage.getItem('current_admin');
+            if (!saved) { window.location.href = 'admin.html'; return; }
+            currentAdmin = JSON.parse(saved);
+        }
+        const rowDate = decodeURIComponent(encodedDate);
+        const pib = decodeURIComponent(encodedPib);
+        const item = decodeURIComponent(encodedItem);
+        if (!confirm(`Змінити статус "На складі" на "Ні" для позиції: "${item}" (${pib})?`)) {
+            return;
+        }
+        const apiUrl = await getApiUrl();
+        if (!apiUrl) { alert("API не налаштовано"); return; }
+        const url = new URL(apiUrl);
+        url.searchParams.append('action', 'update_tmc');
+        url.searchParams.append('date', rowDate);
+        url.searchParams.append('pib', pib);
+        url.searchParams.append('item', item);
+        url.searchParams.append('guard', currentAdmin.name);
+        try {
+            const resp = await fetch(url.toString());
+            const result = await resp.json();
+            if (result.status === "success") {
+                alert(`✅ Статус ТМЦ успішно змінено! Записано вихід у таблицю.`);
+                loadLog('tmc', document.querySelector('.tab-btn.active'));
+            } else {
+                throw new Error(result.message);
+            }
+        } catch(e) {
+            alert("❌ Помилка при оновленні статусу ТMЦ: " + e.message);
+        }
+    };
+
+    window.changeTransportStatus = async function(type, id, status, extraParams = {}) {
+        if (!currentAdmin) {
+            const saved = sessionStorage.getItem('current_admin');
+            if (!saved) { window.location.href = 'admin.html'; return; }
+            currentAdmin = JSON.parse(saved);
+        }
+        if (status === 'Завершено' && !confirm(`🚨 Завершити заявку ${id}? Авто поїде з території.`)) return;
+        const actionsBox = document.getElementById(`actions_container_${id}`);
+        let oldHtml = "";
+        if (actionsBox) {
+            oldHtml = actionsBox.innerHTML;
+            actionsBox.innerHTML = `<span style="color:#6366f1; font-weight:bold;">⏳ Запис стану...</span>`;
+        }
+        const apiUrl = await getApiUrl();
+        if (!apiUrl) { if (actionsBox) actionsBox.innerHTML = oldHtml; return; }
+        const url = new URL(apiUrl);
+        url.searchParams.append('action', 'update_transport_status');
+        url.searchParams.append('type', type);
+        url.searchParams.append('id', id);
+        url.searchParams.append('status', status);
+        url.searchParams.append('guard', currentAdmin.name);
+        for (let key in extraParams) {
+            url.searchParams.append(key, extraParams[key]);
+        }
+        try {
+            const resp = await fetch(url.toString());
+            const result = await resp.json();
+            if (result.status === "success") {
+                if (typeof window.refreshCurrentTabSilent === 'function') {
+                    await window.refreshCurrentTabSilent(type);
+                } else {
+                    loadLog(type, document.querySelector('.tab-btn.active'));
+                }
+            } else {
+                alert("❌ Помилка: " + result.message);
+                if (actionsBox) actionsBox.innerHTML = oldHtml;
+            }
+        } catch (e) {
+            alert("⚠️ Помилка мережі. Статус не зафіксовано на сервері.");
+            if (actionsBox) actionsBox.innerHTML = oldHtml;
+        }
+    };
+
+    window.promptRampAssignment = function(type, id) {
+        let rNum = prompt(`Введіть номер рампи для авто ${id}:`);
+        if (rNum && rNum.trim() !== "") {
+            window.changeTransportStatus(type, id, 'Поставили до рампи', { ramp: rNum.trim() });
+        }
+    };
+
+    window.promptRejectTransport = function(type, id) {
+        let comment = prompt("🚨 Вкажіть обов'язкову причину відхилення заявки:");
+        if (comment === null) return;
+        if (comment.trim() === "") {
+            alert("Помилка! Потрібно вказати причину.");
+            return;
+        }
+        window.changeTransportStatus(type, id, 'Відхилено', { comment: comment.trim() });
+    };
+
+    window.refreshCurrentTabSilent = async function(type) {
+        const apiUrl = await getApiUrl();
+        if (!apiUrl) return;
+        try {
+            const resp = await fetch(`${apiUrl}?logType=${type}`);
+            const freshData = await resp.json();
+            if (Array.isArray(freshData)) {
+                renderTable(freshData, type);
+            }
+        } catch (e) {
+            console.error("Помилка фонового оновлення:", e);
+        }
+    };
+
+    window.activateKanbanColumn = function(targetColumnId) {
+        const columns = ['col_queue', 'col_progress', 'col_archive'];
+        columns.forEach(colId => {
+            const el = document.getElementById(colId);
+            if (!el) return;
+            if (colId === targetColumnId) {
+                el.classList.remove('passive-col');
+                el.classList.add('active-col');
+            } else {
+                el.classList.remove('active-col');
+                el.classList.add('passive-col');
+            }
+        });
+    };
+
+    function refreshCurrentTab() {
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab && activeTab.getAttribute('data-tab')) {
+            loadLog(activeTab.getAttribute('data-tab'), activeTab);
+        } else {
+            loadLog('loading', document.querySelector('.tab-btn[data-tab="loading"]'));
+        }
+    }
+
+    function logout() {
+        sessionStorage.removeItem('current_admin');
+        window.location.href = 'index.html';
+    }
+
+    // ======================== СТАРТОВИЙ БЛОК (ОДИН РАЗ) ========================
+    (async function() {
+        setDefaultWeekPeriod();
+        await getApiUrl();
+        await loadRamps();
+        const saved = sessionStorage.getItem('current_admin');
+        if (!saved) {
+            window.location.href = 'admin.html';
+            return;
+        }
+        currentAdmin = JSON.parse(saved);
+        document.getElementById('admin-name').innerText = currentAdmin.name;
+        loadLog('loading', document.querySelector('.tab-btn[data-tab="loading"]'));
+    })();
+</script>
+</body>
+</html>

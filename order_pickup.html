@@ -3,41 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Видача/Повернення перепусток | DC-Link</title>
+    <title>Забір замовлення | DC-Link</title>
 </head>
 <body>
 <div class="container">
     <div class="card">
-        <h2>Перепустки</h2>
+        <h2> Забір замовлення</h2>
         <div id="message"></div>
 
-        <div class="mode-container">
-            <button id="mode-issue" class="mode-btn active-issue"> Видача</button>
-            <button id="mode-return" class="mode-btn"> Повернення</button>
+        <div class="form-group">
+            <label>Номер замовлення *</label>
+            <input type="text" id="order_number" placeholder="Введіть номер замовлення" required>
         </div>
 
-        <div id="issue-fields">
-            <div class="form-group">
-                <label>ПІБ Відвідувача *</label>
-                <input type="text" id="guest-fio" placeholder="Прізвище Ім'я" required>
-            </div>
-            <div class="form-group">
-                <label>Номер перепустки *</label>
-                <input type="number" id="pass-number" placeholder="000" inputmode="numeric" required>
-            </div>
-        </div>
-
-        <div id="return-fields" style="display: none;">
-            <div class="form-group">
-                <label>Номер перепустки для повернення *</label>
-                <input type="number" id="return-pass-number" placeholder="000" inputmode="numeric" required>
-            </div>
+        <div class="form-group">
+            <label>Отримувач (Клієнт / Кур'єр) *</label>
+            <input type="text" id="receiver" placeholder="ПІБ або назва служби доставки" required>
         </div>
 
         <hr>
 
         <div class="form-group">
-            <label>Охоронець (виконавець)</label>
+            <label>Охоронець (хто реєструє)</label>
             <div class="select-wrapper">
                 <select id="guard_name"><option value="">-- Завантаження --</option></select>
                 <button type="button" class="btn-refresh-inline" id="refreshGuardsBtn" title="Оновити список">🔄</button>
@@ -49,8 +36,8 @@
             <input type="password" id="guard_pin" class="pin-field" maxlength="4" inputmode="numeric" placeholder="••••">
         </div>
 
-        <button class="btn-submit" id="submit-action">ВИДАТИ ПЕРЕПУСТКУ</button>
-        <button class="btn-back" onclick="window.location.href='index.html'">⬅ На головну</button>
+        <button class="btn-submit" id="submit-action">ЗАРЕЄСТРУВАТИ ЗАБІР</button>
+        <a href="index.html" class="btn-back">⬅ На головну</a>
     </div>
 </div>
 
@@ -94,39 +81,16 @@
         });
     }
 
-    // ========== ЛОГІКА ПЕРЕМИКАННЯ РЕЖИМІВ ==========
-    let currentMode = 'issue';
-
-    function setMode(mode) {
-        currentMode = mode;
-        const issueBtn = document.getElementById('mode-issue');
-        const returnBtn = document.getElementById('mode-return');
-        const issueFields = document.getElementById('issue-fields');
-        const returnFields = document.getElementById('return-fields');
-        const submitBtn = document.getElementById('submit-action');
-        if (mode === 'issue') {
-            issueBtn.className = 'mode-btn active-issue';
-            returnBtn.className = 'mode-btn';
-            issueFields.style.display = 'block';
-            returnFields.style.display = 'none';
-            submitBtn.textContent = 'ВИДАТИ ПЕРЕПУСТКУ';
-            submitBtn.style.background = '#22c55e';
-        } else {
-            returnBtn.className = 'mode-btn active-return';
-            issueBtn.className = 'mode-btn';
-            issueFields.style.display = 'none';
-            returnFields.style.display = 'block';
-            submitBtn.textContent = 'ПОВЕРНУТИ ПЕРЕПУСТКУ';
-            submitBtn.style.background = '#f97316';
-        }
-    }
-
     // ========== ВІДПРАВЛЕННЯ ==========
     async function handleSubmit() {
+        const order = document.getElementById('order_number').value.trim();
+        const receiver = document.getElementById('receiver').value.trim();
         const guardName = document.getElementById('guard_name').value;
         const pin = document.getElementById('guard_pin').value;
+
+        if (!order || !receiver) { showMessage("Заповніть усі обов'язкові поля", "error"); return; }
         if (!guardName) { showMessage("Оберіть охоронця", "error"); return; }
-        if (!pin || pin.length !== 4) { showMessage("Введіть 4-цифровий ПІН-код", "error"); return; }
+        if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) { showMessage("Введіть 4-цифровий ПІН-код охоронця", "error"); return; }
 
         const users = await window.getCachedData('users');
         const guards = users.filter(u => u.role && u.role.toLowerCase() === 'охорона');
@@ -141,36 +105,18 @@
         if (!apiUrl) { showMessage("API не налаштовано", "error"); return; }
 
         const url = new URL(apiUrl);
-        let passNum = '';
-
-        if (currentMode === 'issue') {
-            const guest = document.getElementById('guest-fio').value.trim();
-            passNum = document.getElementById('pass-number').value.trim();
-            if (!guest) { showMessage("Введіть ПІБ відвідувача", "error"); return; }
-            if (!passNum) { showMessage("Введіть номер перепустки", "error"); return; }
-            url.searchParams.append('action', 'reg_pass');
-            url.searchParams.append('guest', guest);
-            url.searchParams.append('pass_id', passNum);
-            url.searchParams.append('issued_by', guardName);
-        } else {
-            passNum = document.getElementById('return-pass-number').value.trim();
-            if (!passNum) { showMessage("Введіть номер перепустки для повернення", "error"); return; }
-            url.searchParams.append('action', 'return_pass');
-            url.searchParams.append('pass_id', passNum);
-            url.searchParams.append('issued_by', guardName);
-        }
+        url.searchParams.append('action', 'reg_order_pickup');
+        url.searchParams.append('order_number', order);
+        url.searchParams.append('receiver', receiver);
+        url.searchParams.append('guard', guardName);
 
         try {
             const resp = await fetch(url.toString());
             const result = await resp.json();
             if (result.status === "success") {
-                showMessage(currentMode === 'issue' ? `✅ Перепустку №${passNum} видано` : `✅ Перепустку №${passNum} повернуто`, "success");
-                if (currentMode === 'issue') {
-                    document.getElementById('guest-fio').value = "";
-                    document.getElementById('pass-number').value = "";
-                } else {
-                    document.getElementById('return-pass-number').value = "";
-                }
+                showMessage(`✅ Забір замовлення №${order} зареєстровано`, "success");
+                document.getElementById('order_number').value = "";
+                document.getElementById('receiver').value = "";
                 document.getElementById('guard_pin').value = "";
             } else throw new Error(result.message);
         } catch(e) { showMessage("❌ Помилка: " + e.message, "error"); }
@@ -183,22 +129,8 @@
     }
 
     // ========== ІНІЦІАЛІЗАЦІЯ (cloneNode ДЛЯ НАДІЙНОСТІ) ==========
-    async function initPassesPage() {
+    async function initOrderPickupPage() {
         await loadGuards();
-
-        // Клонуємо кнопки для уникнення дублювання подій
-        const issueBtn = document.getElementById('mode-issue');
-        if (issueBtn) {
-            const newBtn = issueBtn.cloneNode(true);
-            issueBtn.parentNode.replaceChild(newBtn, issueBtn);
-            newBtn.addEventListener('click', () => setMode('issue'));
-        }
-        const returnBtn = document.getElementById('mode-return');
-        if (returnBtn) {
-            const newBtn = returnBtn.cloneNode(true);
-            returnBtn.parentNode.replaceChild(newBtn, returnBtn);
-            newBtn.addEventListener('click', () => setMode('return'));
-        }
 
         const refreshBtn = document.getElementById('refreshGuardsBtn');
         if (refreshBtn) {
@@ -217,14 +149,12 @@
             submitBtn.parentNode.replaceChild(newBtn, submitBtn);
             newBtn.addEventListener('click', handleSubmit);
         }
-
-        setMode('issue');
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPassesPage);
+        document.addEventListener('DOMContentLoaded', initOrderPickupPage);
     } else {
-        initPassesPage();
+        initOrderPickupPage();
     }
 })();
 </script>

@@ -4,90 +4,277 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Складська Логістика | Головна</title>
+     <link rel="stylesheet" href="index.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 500px; width: 90%; }
-        .menu-item { 
-            background: white; padding: 30px 10px; border-radius: 20px; text-align: center; 
-            text-decoration: none; color: #333; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            transition: 0.3s; display: flex; flex-direction: column; align-items: center;
+        #page-content {
+            transition: opacity 0.25s ease-in-out;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70vh;
         }
-        .menu-item:hover { transform: scale(1.05); background: #e8f0fe; }
-        .icon { font-size: 40px; margin-bottom: 10px; }
-        .title { font-size: 16px; }
-        .header { grid-column: span 2; text-align: center; margin-bottom: 10px; color: #1a73e8; }
-        
-        /* Кнопка налаштувань у кутку */
-        .settings-btn { 
-            position: fixed; bottom: 15px; right: 15px; 
-            background: #fff; border: 1px solid #ddd; 
-            border-radius: 50%; width: 40px; height: 40px; 
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); opacity: 0.6;
+        .dynamic-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .settings-btn:hover { opacity: 1; }
     </style>
 </head>
 <body>
 
-<div class="menu-grid">
-    <div class="header"><h2>Система реєстрації Doc-Sklad</h2></div>
-    
-    <a href="auto.html" class="menu-item">
-        <span class="icon">🚚</span>
-        <span class="title">Реєстрація авто</span> 
-    </a>
-    
-    <a href="entrance.html" class="menu-item">
-        <span class="icon">🚪</span>
-        <span class="title">Вхід робітника</span>
-    </a>
-    
-    <a href="passes.html" class="menu-item">
-        <span class="icon">🎫</span>
-        <span class="title">Видача перепусток</span>
-    </a>
-    
-    <a href="admin.html" class="menu-item">
-        <span class="icon">🛡️</span>
-        <span class="title">Вхід працівника (Адмін)</span>
-    </a>
-    
-    <a href="keys.html" class="menu-item" style="grid-column: span 2; padding: 15px;">
-        <span class="icon">🔑</span>
-        <span class="title">Видача ключів</span>
-    </a>
+<div class="main-container">
+    <div id="page-content">
+        <div class="header">
+            <h2>Система реєстрації Doc-Sklad</h2>
+        </div>
+        <div class="menu-grid">
+            <a href="auto.html" class="menu-item" onclick="navigateToPage(event, 'auto.html')">
+                <div class="card-bg" style="background-image: url('3.webp');"></div>
+                <div class="card-overlay"></div>
+                <div class="card-content"><span class="title">Реєстрація авто</span></div>
+            </a>
+            <a href="entrance.html" class="menu-item" onclick="navigateToPage(event, 'entrance.html')">
+                <div class="card-bg" style="background-image: url('8.webp');"></div>
+                <div class="card-overlay"></div>
+                <div class="card-content"><span class="title">Вхід робітника</span></div>
+            </a>
+            <a href="passes.html" class="menu-item" onclick="navigateToPage(event, 'passes.html')">
+                <div class="card-bg" style="background-image: url('7.webp');"></div>
+                <div class="card-overlay"></div>
+                <div class="card-content"><span class="title">Видача перепусток</span></div>
+            </a>
+            <a href="admin.html" class="menu-item" onclick="navigateToPage(event, 'admin.html')">
+                <div class="card-bg" style="background-image: url('1.webp');"></div>
+                <div class="card-overlay"></div>
+                <div class="card-content"><span class="title">Панель охорони</span></div>
+            </a>
+            <a href="visitors.html" class="menu-item" onclick="navigateToPage(event, 'visitors.html')">
+                <div class="card-bg" style="background-image: url('9.webp');"></div>
+                <div class="card-overlay"></div>
+                <div class="card-content"><span class="title">Журнал відвідувачів</span></div>
+            </a>
+            <a href="keys.html" class="menu-item" onclick="navigateToPage(event, 'keys.html')">
+                <div class="card-bg" style="background-image: url('2.webp');"></div>
+                <div class="card-overlay"></div>
+                <div class="card-content"><span class="title">Видача ключів</span></div>
+            </a>
+            <a href="tmc.html" class="menu-item" onclick="navigateToPage(event, 'tmc.html')">
+                <div class="card-bg" style="background-image: url('6.webp');"></div>
+                <div class="card-overlay"></div>
+                <div class="card-content"><span class="title">Журнал ТМЦ</span></div>
+            </a>
+             <a href="order_pickup.html" class="menu-item" onclick="navigateToPage(event, 'order_pickup.html')">
+                <div class="card-bg" style="background-image: url('5.webp');"></div>
+                <div class="card-overlay"></div>
+                <div class="card-content"><span class="title">Забір замовлення</span></div>
+            </a>
+        </div>
+    </div>
 </div>
 
 <button class="settings-btn" onclick="resetApiUrl()" title="Налаштувати API">⚙️</button>
 
 <script>
-       
-    document.addEventListener("DOMContentLoaded", function() {
-        // Перевіряємо, чи є вже збережене посилання в пам'яті браузера
-        let API_URL = localStorage.getItem('apps_script_url');
+    // ---------- ГЛОБАЛЬНІ ЗМІННІ ТА ФУНКЦІЇ ----------
+    window.API_URL = localStorage.getItem('apps_script_url');
+    window.guardsList = [];
 
-        // Якщо посилання немає — просимо користувача його ввести
-        if (!API_URL) {
-            API_URL = prompt("Вставте посилання на ваш Google Apps Script (Web App URL):");
-            if (API_URL && API_URL.includes("script.google.com")) {
-                localStorage.setItem('apps_script_url', API_URL);
-                alert("API успішно збережено в пам'яті браузера!");
-            } else if (API_URL) {
-                alert("Це не схоже на посилання Google Script. Спробуйте ще раз.");
+    window.getApiUrl = function() {
+        if (window.API_URL) return window.API_URL;
+        let url = localStorage.getItem('apps_script_url');
+        if (!url) {
+            url = prompt("Вставте посилання на Google Apps Script (Web App URL):");
+            if (url && url.includes("script.google.com")) {
+                localStorage.setItem('apps_script_url', url);
+            } else if (url) {
+                alert("Невірне посилання. Спробуйте ще раз.");
+                return window.getApiUrl();
             }
         }
-    });
+        window.API_URL = url;
+        return url;
+    };
 
-    // Функція для зміни посилання через кнопку-шестерню
-    function resetApiUrl() {
-        let conf = confirm("Бажаєте змінити посилання на Google Apps Script?");
-        if (conf) {
-            localStorage.removeItem('apps_script_url');
-            location.reload(); // Перезавантаження викличе prompt знову
+    window.loadGuards = async function(force = false) {
+        const cacheKey = 'guards_list';
+        const cache = sessionStorage.getItem(cacheKey);
+        if (!force && cache) {
+            try {
+                window.guardsList = JSON.parse(cache);
+                return window.guardsList;
+            } catch(e) {}
+        }
+        const url = window.getApiUrl();
+        if (!url) return [];
+        try {
+            const resp = await fetch(`${url}?logType=users`);
+            const users = await resp.json();
+            const guards = (Array.isArray(users) ? users : []).filter(u => 
+                u.role && u.role.toString().toLowerCase().trim() === "охорона"
+            );
+            window.guardsList = guards;
+            sessionStorage.setItem(cacheKey, JSON.stringify(guards));
+            return guards;
+        } catch(e) {
+            console.error("Помилка завантаження охоронців", e);
+            return [];
+        }
+    };
+	window.loadGlobalDrivers = async function(force = false) {
+			const cacheKey = 'global_drivers_list';
+			const cache = sessionStorage.getItem(cacheKey);
+			if (!force && cache) {
+				try { return JSON.parse(cache); } catch(e) {}
+			}
+			const url = window.getApiUrl();
+			if (!url) return [];
+			try {
+				const resp = await fetch(`${url}?logType=drivers_list_data`);
+				const data = await resp.json();
+				if (Array.isArray(data) && data.length) {
+					sessionStorage.setItem(cacheKey, JSON.stringify(data));
+					console.log("🚚 Водії завантажені в кеш index.html");
+					return data;
+				}
+				return [];
+			} catch(e) {
+				console.error("Помилка фонового завантаження водіїв:", e);
+				return [];
+			}
+		};
+    window.verifyGuardPin = async function(guardName, pin) {
+        if (!window.guardsList.length) await window.loadGuards();
+        const guard = window.guardsList.find(g => g.name === guardName);
+        return guard && guard.pin === pin;
+    };
+
+    window.showMessage = function(elementId, msg, type) {
+        const div = document.getElementById(elementId);
+        if (!div) return;
+        div.innerHTML = `<div class="${type}">${msg}</div>`;
+        setTimeout(() => {
+            if (div.innerHTML === `<div class="${type}">${msg}</div>`) div.innerHTML = "";
+        }, 4000);
+    };
+
+    // ---------- НАВІГАЦІЯ ----------
+    let mainMenuHTML = "";
+    document.addEventListener("DOMContentLoaded", function() {
+        mainMenuHTML = document.getElementById('page-content').innerHTML;
+        window.getApiUrl();
+        window.loadGuards();
+		window.loadGlobalDrivers();
+           });
+			window.getCachedData = async function(key, forceRefresh = false) {
+			const url = window.getApiUrl();
+			if (!url) return null;
+			
+			const cacheKey = `cached_${key}`;
+			const cached = sessionStorage.getItem(cacheKey);
+			const TTL = 60 * 60 * 1000; // 1 година
+			
+			if (!forceRefresh && cached) {
+				try {
+					const parsed = JSON.parse(cached);
+					if (parsed.timestamp && (Date.now() - parsed.timestamp) < TTL) {
+						return parsed.data;
+					}
+				} catch(e) {}
+			}
+			
+			// Визначаємо, який запит робити залежно від ключа
+			let data = null;
+			try {
+				if (key === 'users') {
+					const resp = await fetch(`${url}?logType=users`);
+					data = await resp.json();
+				} else if (key === 'locations') {
+					const resp = await fetch(`${url}?logType=locations`);
+					data = await resp.json();
+				} else if (key === 'ramps') {
+					const resp = await fetch(`${url}?action=get_ramps`);
+					data = await resp.json();
+				} else {
+					return null;
+				}
+				if (Array.isArray(data)) {
+					sessionStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: data }));
+					return data;
+				}
+				return [];
+			} catch(e) {
+				console.error(`Помилка завантаження ${key}:`, e);
+				return [];
+			}
+		};
+
+		// Попереднє завантаження всіх даних після отримання API
+		async function preloadAllData() {
+			await window.getCachedData('users');
+			await window.getCachedData('locations');
+			await window.getCachedData('ramps');
+		}
+
+		// Викликати після window.getApiUrl() (в DOMContentLoaded)
+		preloadAllData();
+
+	
+    async function navigateToPage(event, url) {
+        event.preventDefault();
+        const contentDiv = document.getElementById('page-content');
+        contentDiv.style.opacity = 0;
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Не вдалося завантажити сторінку");
+            const htmlText = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            const targetContainer = doc.querySelector('.container') || doc.body;
+            contentDiv.innerHTML = `<div class="dynamic-wrapper">${targetContainer.innerHTML}</div>`;
+            const backBtn = contentDiv.querySelector('.btn-back');
+            if (backBtn) {
+                backBtn.href = "#";
+                backBtn.removeAttribute('onclick');
+                backBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    loadMainMenu();
+                });
+            }
+            contentDiv.style.opacity = 1;
+            const scripts = doc.querySelectorAll('script:not([src])');
+            scripts.forEach(script => {
+                const newScript = document.createElement('script');
+                newScript.text = script.text;
+                document.body.appendChild(newScript);
+                document.body.removeChild(newScript);
+            });
+        } catch (error) {
+            contentDiv.style.opacity = 1;
+            alert("Помилка підвантаження: " + error.message);
         }
     }
-</script>
 
+    function loadMainMenu() {
+        const contentDiv = document.getElementById('page-content');
+        contentDiv.style.opacity = 0;
+        setTimeout(() => {
+            contentDiv.innerHTML = mainMenuHTML;
+            contentDiv.style.opacity = 1;
+        }, 200);
+    }
+
+  	// Оновлення функції скидання API
+		function resetApiUrl() {
+			if (confirm("Змінити посилання на API?")) {
+				localStorage.removeItem('apps_script_url');
+				sessionStorage.clear(); // очищаємо весь кеш
+				window.location.reload();
+			}
+		}
+
+</script>
 </body>
 </html>

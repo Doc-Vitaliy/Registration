@@ -3,143 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель Охорони | Admin</title>
-    <style>
-        :root { --admin-color: #2c3e50; --accent: #3498db; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; }
-        .login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .login-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 350px; text-align: center; }
-        .admin-panel { display: none; padding: 10px; }
-        .header { background: var(--admin-color); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 15px 15px; }
-        .tab-menu { display: flex; overflow-x: auto; background: white; padding: 10px; gap: 10px; margin-top: 10px; border-radius: 10px; }
-        .tab-btn { padding: 10px 20px; border: none; background: #eee; border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: bold; transition: 0.3s; }
-        .tab-btn.active { background: var(--accent); color: white; }
-        .table-container { background: white; margin-top: 15px; border-radius: 10px; overflow-x: auto; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
-        th { background: #f8f9fa; color: #666; position: sticky; top: 0; }
-        input, select, .btn-login { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        .btn-login { background: var(--admin-color); color: white; font-weight: bold; cursor: pointer; border: none; }
-    </style>
+    <title>Вхід в адмін-панель | DC-Link</title>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
-
-<div id="login-screen" class="login-screen">
-    <div class="login-card">
-        <h2>🛡️ Вхід Адміна</h2>
-        <label>Оберіть охоронця</label>
-        <select id="admin-user">
-            <option value="Ковальчук О.">Ковальчук О.</option>
-            <option value="Олійник В.">Олійник В.</option>
-            <option value="Сидоренко М.">Сидоренко М.</option>
-        </select>
-        <input type="password" id="admin-pin" placeholder="Введіть ПІН-код" maxlength="4" inputmode="numeric" style="text-align: center; letter-spacing: 5px;">
-        <button class="btn-login" onclick="tryLogin()">УВІЙТИ</button>
-        <a href="index.html" style="text-decoration: none; font-size: 13px; color: #888; display: block; margin-top: 10px;">Повернутись в меню</a>
-    </div>
-</div>
-
-<div id="admin-panel" class="admin-panel">
-    <div class="header">
-        <span><b>ADMIN:</b> <span id="active-user">---</span></span>
-        <button onclick="location.reload()" style="background:none; border: 1px solid white; color:white; border-radius: 5px; padding: 5px 10px; cursor:pointer;">Вихід</button>
-    </div>
-
-    <div class="tab-menu">
-        <button class="tab-btn active" onclick="loadLog('auto', event)">🚚 Авто</button>
-        <button class="tab-btn" onclick="loadLog('workers', event)">👤 Співробітники</button>
-        <button class="tab-btn" onclick="loadLog('passes', event)">🎫 Перепустки</button>
-        <button class="tab-btn" onclick="loadLog('keys', event)">🔑 Ключі</button>
-    </div>
-
-    <div id="log-content" class="table-container">
-        <p style="padding: 20px; color: #888;">Оберіть журнал для перегляду</p>
+<div class="container">
+    <div class="login-card card">
+        <h2> Вхід в адмін-панель</h2>
+        <div id="message"></div>
+        <div class="form-group">
+            <label>Оберіть охоронця</label>
+            <div class="select-wrapper">
+                <select id="admin-user">
+                    <option value="">-- Завантаження --</option>
+                </select>
+                <button type="button" class="btn-refresh-inline" id="refreshGuardsBtn">🔄</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>ПІН-код (4 цифри)</label>
+            <input type="password" id="admin-pin" class="pin-field" maxlength="4" inputmode="numeric" placeholder="****">
+        </div>
+        <button class="btn-login" id="login-btn">УВІЙТИ</button>
+        <a href="index.html" class="back-link" id="back-to-main">⬅ Повернутись в меню</a>
     </div>
 </div>
 
 <script>
-    const API_URL = localStorage.getItem('apps_script_url');
-
-    const guards = { 
-        "Ковальчук О.": "7777", 
-        "Олійник В.": "8888", 
-        "Сидоренко М.": "9999" 
-    };
-
-    function tryLogin() {
-        const user = document.getElementById('admin-user').value;
-        const pin = document.getElementById('admin-pin').value;
-
-        if (guards[user] === pin) {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'block';
-            document.getElementById('active-user').innerText = user;
-            loadLog('auto'); // Завантаження за замовчуванням
-        } else {
-            alert("❌ Невірний ПІН-код!");
-            document.getElementById('admin-pin').value = "";
-        }
+(function() {
+    // Якщо функції вже визначені в глобальному об'єкті, не визначаємо їх повторно
+    if (window._adminFunctionsDefined) {
+        initAdminPage();
+        return;
     }
+    window._adminFunctionsDefined = true;
 
-    async function loadLog(type, event) {
-        if (!API_URL) {
-            alert("Спочатку налаштуйте API на головній сторінці!");
+    let allUsers = [];
+
+    // ========== ЗАВАНТАЖЕННЯ СПИСКУ ОХОРОНЦІВ (з кешем) ==========
+    async function loadGuards(forceRefresh = false) {
+        const select = document.getElementById('admin-user');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Завантаження... --</option>';
+        const users = await window.getCachedData('users', forceRefresh);
+        if (!users) {
+            select.innerHTML = '<option value="">-- Помилка завантаження --</option>';
             return;
         }
-
-        // Перемикання стилю кнопок
-        if (event) {
-            const btns = document.querySelectorAll('.tab-btn');
-            btns.forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-        }
-
-        const container = document.getElementById('log-content');
-        container.innerHTML = "<p style='padding:20px;'>⏳ Завантаження даних...</p>";
-
-        try {
-            const response = await fetch(`${API_URL}?logType=${type}`);
-            const data = await response.json();
-            renderTable(data);
-        } catch (error) {
-            console.error("Помилка:", error);
-            container.innerHTML = "<p style='padding:20px; color:red;'>❌ Помилка з'єднання з Google Таблицею.</p>";
-        }
-    }
-
-    function renderTable(data) {
-        const container = document.getElementById('log-content');
-        
-        if (!data || data.length === 0) {
-            container.innerHTML = "<p style='padding:20px;'>Журнал порожній.</p>";
+        allUsers = users;
+        const guards = allUsers.filter(u => u.role && u.role.toLowerCase() === "охорона");
+        if (guards.length === 0) {
+            select.innerHTML = '<option value="">-- Немає охоронців --</option>';
             return;
         }
-
-        let html = `<table><thead><tr>`;
-        const headers = Object.keys(data[0]);
-        headers.forEach(h => html += `<th>${h}</th>`);
-        html += `</tr></thead><tbody>`;
-
-        data.forEach(row => {
-            html += `<tr>`;
-            headers.forEach(h => html += `<td>${row[h] || ""}</td>`);
-            html += `</tr>`;
+        select.innerHTML = '<option value="">-- Виберіть охоронця --</option>';
+        guards.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.name;
+            opt.textContent = g.name;
+            select.appendChild(opt);
         });
-
-        html += `</tbody></table>`;
-        container.innerHTML = html;
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-        if (!API_URL) {
-            let url = prompt("Вставте посилання на ващ Google Apps Script:");
-            if (url && url.includes("script.google.com")) {
-                localStorage.setItem('apps_script_url', url);
-                location.reload();
-            }
-        }
-    });
-</script>
+    // ========== ЛОГІН ==========
+    async function tryLogin() {
+        const userName = document.getElementById('admin-user').value;
+        const pin = document.getElementById('admin-pin').value;
+        if (!userName) { showMessage("Оберіть охоронця", "error"); return; }
+        if (!pin || pin.length !== 4) { showMessage("Введіть 4-цифровий ПІН", "error"); return; }
+        if (allUsers.length === 0) await loadGuards(false);
+        const guard = allUsers.find(u => u.name === userName && u.role && u.role.toLowerCase() === "охорона");
+        if (!guard) { showMessage("Користувач не є охоронцем", "error"); return; }
+        if (guard.pin !== pin) { showMessage("Невірний ПІН-код", "error"); return; }
+        sessionStorage.setItem('current_admin', JSON.stringify({ name: guard.name, pin: guard.pin }));
+        window.location.href = 'admin_dashboard.html';
+    }
 
+    function showMessage(msg, type) {
+        const div = document.getElementById('message');
+        div.innerHTML = `<div class="${type}">${msg}</div>`;
+        setTimeout(() => div.innerHTML = "", 4000);
+    }
+
+    // ========== ІНІЦІАЛІЗАЦІЯ (КОЖНОГО РАЗУ) ==========
+    async function initAdminPage() {
+        await loadGuards(false);
+
+        // Кнопка оновлення списку
+        const refreshBtn = document.getElementById('refreshGuardsBtn');
+        if (refreshBtn) {
+            const newBtn = refreshBtn.cloneNode(true);
+            refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
+            newBtn.addEventListener('click', async () => {
+                await loadGuards(true);
+                showMessage("🔄 Список охоронців оновлено", "success");
+            });
+        }
+
+        // Кнопка логіну
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn) {
+            const newBtn = loginBtn.cloneNode(true);
+            loginBtn.parentNode.replaceChild(newBtn, loginBtn);
+            newBtn.addEventListener('click', tryLogin);
+        }
+
+        // Посилання "На головну" (потрібне для AJAX-навігації)
+        const backLink = document.getElementById('back-to-main');
+        if (backLink) {
+            const newLink = backLink.cloneNode(true);
+            backLink.parentNode.replaceChild(newLink, backLink);
+            newLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof window.loadMainMenu === 'function') window.loadMainMenu();
+                else window.location.href = 'index.html';
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAdminPage);
+    } else {
+        initAdminPage();
+    }
+})();
+</script>
 </body>
 </html>

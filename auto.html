@@ -3,189 +3,426 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Реєстрація Авто | DC-Link</title>
-    <style>
-        :root { --primary: #1a73e8; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
-        .form-container { max-width: 500px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: var(--primary); margin-bottom: 25px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
-        
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
-        
-        input, select { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid #ccc; 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-            font-size: 16px; 
-            outline-color: var(--primary);
-        }
-        
-        input:invalid { border-color: #dc3545; }
-        
-        .btn-submit { 
-            width: 100%; 
-            padding: 15px; 
-            background: #28a745; 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 18px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 10px;
-            transition: 0.3s;
-        }
-        .btn-submit:hover { background: #218838; }
-        .btn-back { 
-            width: 100%; 
-            background: none; 
-            border: 1px solid #6c757d; 
-            color: #6c757d; 
-            padding: 10px; 
-            margin-top: 15px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-        }
-
-        /* Стиль для успішного номерка */
-        #result-card { display: none; text-align: center; }
-        .ticket-num { font-size: 64px; font-weight: bold; color: #28a745; margin: 20px 0; }
-    </style>
-</head>
+    <title>Реєстрація авто | DC-Link</title>
+  </head>
 <body>
+<div class="container">
+    <div class="card" id="main-card">
+        <div id="form-content">
+            <h2>Реєстрація авто</h2>
+            <div id="message"></div>
 
-<div class="form-container" id="main-card">
-    <div id="form-content">
-        <h2>🚚 Реєстрація прибуття</h2>
-        
-        <div class="form-group">
-            <label for="fio">ПІБ Водія</label>
-            <input type="text" id="fio" placeholder="Прізвище Ім'я По батькові" 
-                   pattern="^[А-Яа-яЁёІіЇїЄє' ]+$" title="Тільки літери" required>
+            <div class="form-group">
+                <label>Тип операції *</label>
+                <div class="toggle-group" id="toggle-group">
+                    <button type="button" class="toggle-btn" data-op="loading"> Завантаження</button>
+                    <button type="button" class="toggle-btn" data-op="unloading"> Вивантаження</button>
+                </div>
+                <input type="hidden" id="operation" value="loading">
+            </div>
+
+            <div class="form-group">
+                <label>Постачальник / Перевізник *</label>
+                <div class="select-wrapper">
+                    <input type="text" id="company" list="suppliers-list" placeholder="Виберіть або введіть назву" required autocomplete="off">
+                    <button type="button" class="btn-refresh-inline" id="refreshSuppliersBtn">🔄</button>
+                </div>
+                <datalist id="suppliers-list"></datalist>
+            </div>
+
+            <div id="dynamic-fields"></div>
+
+			<div id="auto-load-container" style="display: none;">
+				<button type="button" class="btn-submit" id="auto-load-btn" style="background: #3b82f6;" onclick="window.openRouteModalDebug()">📋 Заповнити зі списку рейсів</button>
+			</div>
+						<!-- Модальне вікно для вибору рейсу -->
+				<div id="route-inline-container" style="display: none; position: absolute; top: 0; left: 0; width: 100%; min-height: 100%; background: #0b1329; border-radius: 16px; padding: 20px; box-sizing: border-box; z-index: 100;">
+					<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3a506b; padding-bottom: 10px; margin-bottom: 15px;">
+						<h3 style="margin: 0; color: #38bdf8; font-size: 18px;">📋 Маршрути власної логістики</h3>
+						<button type="button" onclick="document.getElementById('route-inline-container').style.display='none'" style="background: none; border: none; color: #f87171; font-size: 26px; cursor: pointer; line-height: 1;">&times;</button>
+					</div>
+					<div id="routes-inline-list" style="overflow-x: auto;">Завантаження...</div>
+					<button type="button" class="btn-back" onclick="document.getElementById('route-inline-container').style.display='none'" style="margin-top: 15px; width: 100%; padding: 10px; background: #1c2541; border: 1px solid #3a506b; color: #fff; border-radius: 8px; cursor: pointer;">⬅ Закрити список</button>
+				</div>
+
+            <button class="btn-submit" id="submit-action">ЗАРЕЄСТРУВАТИ</button>
+            <button class="btn-back" id="back-to-menu">⬅ На головну</button>
         </div>
-
-        <div class="form-group">
-            <label for="ttn">№ ТТН або ПН</label>
-            <input type="text" id="ttn" placeholder="Цифри та літери" 
-                   maxlength="20" required>
+        <div id="result-card" style="display: none;">
+            <h3>✅ Реєстрація успішна!</h3>
+            <p>Очікуйте підтвердження або виклику</p>
+            <p id="unload-id" style="font-weight:bold; color:#10b981;"></p>
+            <button class="btn-submit" id="new-reg-btn">Нова реєстрація</button>
+            <button class="btn-back" id="back-to-menu-result">⬅ На головну</button>
         </div>
-
-        <div class="form-group">
-            <label for="company">Постачальник / Перевізник</label>
-            <input list="vendors" id="company" placeholder="Почніть вводити назву..." required>
-            <datalist id="vendors">
-                <option value="Нова Пошта">
-                <option value="Meest Express">
-                <option value="Сат">
-                <option value="Delivery">
-                <option value="DC-Link (Власна логістика)">
-                <option value="КиївМлин">
-            </datalist>
-        </div>
-
-        <div class="form-group">
-            <label for="car_model">Марка авто</label>
-            <input type="text" id="car_model" placeholder="Наприклад: Mercedes-Benz" required>
-        </div>
-
-        <div class="form-group">
-            <label for="car_number">Держ. номер авто</label>
-            <input type="text" id="car_number" placeholder="Наприклад: AA1234BB" 
-                   pattern="^[A-Z0-9А-Яа-я]+$" maxlength="10" required>
-        </div>
-
-        <div class="form-group">
-            <label for="phone">Контактний телефон</label>
-            <input type="tel" id="phone" placeholder="0991234567" 
-                   pattern="[0-9]{10}" title="Формат: 0991234567 (10 цифр)" required>
-        </div>
-
-        <div class="form-group">
-            <label for="group">Група товару</label>
-            <select id="group">
-                <option value="КБТ">КБТ (Велика техніка)</option>
-                <option value="СГТ">СГТ (Середня техніка)</option>
-                <option value="МГТ">МГТ (Дрібна техніка)</option>
-                <option value="Інше">Інше</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="type">Тип вантажу</label>
-            <select id="type">
-                <option value="Піддони">На піддонах</option>
-                <option value="Насипом">Насипом / Коробки</option>
-            </select>
-        </div>
-
-        <button class="btn-submit" onclick="submitForm()">ОТРИМАТИ НОМЕР</button>
-        <button class="btn-back" onclick="window.location.href='index.html'">Повернутись в меню</button>
-    </div>
-
-    <div id="result-card">
-        <h3>Ваша реєстрація успішна!</h3>
-        <p>Ваш номер у черзі:</p>
-        <div class="ticket-num" id="ticket-val">---</div>
-        <p>Очікуйте повідомлення або виклику</p>
-        <button class="btn-submit" onclick="location.reload()">Зробити нову реєстрацію</button>
     </div>
 </div>
 
+
+
 <script>
-    async function submitForm() {
-        // Перевірка валідності полів
-        const inputs = document.querySelectorAll('input');
-        for (let input of inputs) {
-            if (!input.checkValidity()) {
-                alert("Будь ласка, заповніть поле: " + input.previousElementSibling.innerText);
-                return;
+(function() {
+    let driversList = [];
+
+    function showMessage(msg, type) {
+        const div = document.getElementById('message');
+        if (div) div.innerHTML = `<div class="${type}">${msg}</div>`;
+        setTimeout(() => { if (div) div.innerHTML = ""; }, 4000);
+    }
+
+    async function loadSuppliers(force = false) {
+        const datalist = document.getElementById('suppliers-list');
+        if (!datalist) return;
+        const fallback = ["Нова Пошта","Meest Express","Сат","Delivery","DC-Link (Власна логістика)"];
+        if (!force) {
+            const cached = sessionStorage.getItem('suppliers_list');
+            if (cached) {
+                try {
+                    const s = JSON.parse(cached);
+                    if (s.length) { datalist.innerHTML = s.map(v => `<option value="${v}">`).join(''); return; }
+                } catch(e) {}
             }
         }
-
-        const btn = document.querySelector('.btn-submit');
-        btn.disabled = true;
-        btn.innerText = "Відправка...";
-
-        const data = {
-            action: 'reg_auto',
-            fio: document.getElementById('fio').value,
-            ttn: document.getElementById('ttn').value,
-            company: document.getElementById('company').value,
-            car: document.getElementById('car_model').value + " " + document.getElementById('car_number').value,
-            phone: document.getElementById('phone').value,
-            group: document.getElementById('group').value,
-            type: document.getElementById('type').value
-        };
-
         try {
-            // Тут буде твоє посилання на Apps Script
-            const API_URL = localStorage.getItem('apps_script_url');
-
-            if (!API_URL) {
-                alert("Помилка: API посилання не знайдено! Поверніться на головну сторінку.");
-            }
-            
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                mode: 'no-cors', // Важливо для Google Apps Script
-                body: JSON.stringify(data)
-            });
-
-            // Показуємо результат (оскільки no-cors не дає прочитати JSON, 
-            // ми або генеруємо номер самі, або чекаємо на повноцінне API)
-            document.getElementById('form-content').style.display = 'none';
-            document.getElementById('ticket-val').innerText = "T-" + (Math.floor(Math.random() * 90) + 10);
-            document.getElementById('result-card').style.display = 'block';
-
-        } catch (error) {
-            alert("Помилка відправки. Перевірте з'єднання.");
-            btn.disabled = false;
-            btn.innerText = "ОТРИМАТИ НОМЕР";
+            const url = window.getApiUrl ? window.getApiUrl() : localStorage.getItem('apps_script_url');
+            if (!url) throw new Error();
+            const resp = await fetch(`${url}?action=get_suppliers`);
+            const data = await resp.json();
+            if (Array.isArray(data) && data.length) {
+                sessionStorage.setItem('suppliers_list', JSON.stringify(data));
+                datalist.innerHTML = data.map(v => `<option value="${v}">`).join('');
+            } else throw new Error();
+        } catch(e) {
+            datalist.innerHTML = fallback.map(v => `<option value="${v}">`).join('');
+            showMessage("⚠️ Використовується резервний список постачальників", "warning");
         }
     }
+
+   async function loadDrivers() {
+        if (driversList.length) return driversList;
+        
+        // Беремо дані, які index.html заздалегідь підготував у сесію
+        const cached = sessionStorage.getItem('global_drivers_list');
+        if (cached) {
+            try {
+                const data = JSON.parse(cached);
+                if (Array.isArray(data)) {
+                    driversList = data;
+                }
+            } catch(e) {
+                console.error("Помилка парсингу глобального списку водіїв", e);
+            }
+        }
+        return driversList;
+    }
+
+   function applyDatalists() {
+        // Залізобетонно беремо свіжі дані з сесії index.html прямо в момент виклику
+        let actualDrivers = [];
+        const cached = sessionStorage.getItem('global_drivers_list');
+        if (cached) {
+            try {
+                const data = JSON.parse(cached);
+                if (Array.isArray(data)) actualDrivers = data;
+            } catch(e) {
+                console.error("Помилка зчитування водіїв всередині applyDatalists", e);
+            }
+        }
+
+        if (!actualDrivers.length) return;
+
+        // 1. Прив'язка до ПІБ водія
+        let fio = document.getElementById('fio');
+        if (fio) {
+            let dl = document.getElementById('drivers-fio-datalist');
+            if (!dl) {
+                dl = document.createElement('datalist');
+                dl.id = 'drivers-fio-datalist';
+                document.body.appendChild(dl);
+            }
+            fio.setAttribute('list', 'drivers-fio-datalist');
+            dl.innerHTML = actualDrivers.map(d => `<option value="${escapeHtml(d.fio)}">`).join('');
+        }
+
+        // 2. Прив'язка до марки авто
+        let carModel = document.getElementById('car_model');
+        if (carModel) {
+            let dl = document.getElementById('drivers-model-datalist');
+            if (!dl) {
+                dl = document.createElement('datalist');
+                dl.id = 'drivers-model-datalist';
+                document.body.appendChild(dl);
+            }
+            carModel.setAttribute('list', 'drivers-model-datalist');
+            let uniqBrands = [...new Set(actualDrivers.map(d => d.brand).filter(Boolean))];
+            dl.innerHTML = uniqBrands.map(b => `<option value="${escapeHtml(b)}">`).join('');
+        }
+
+        // 3. Прив'язка до держ. номера авто
+        let carNumber = document.getElementById('car_number');
+        if (carNumber) {
+            let dl = document.getElementById('drivers-number-datalist');
+            if (!dl) {
+                dl = document.createElement('datalist');
+                dl.id = 'drivers-number-datalist';
+                document.body.appendChild(dl);
+            }
+            carNumber.setAttribute('list', 'drivers-number-datalist');
+            let uniqNumbers = [...new Set(actualDrivers.map(d => d.number).filter(Boolean))];
+            dl.innerHTML = uniqNumbers.map(n => `<option value="${escapeHtml(n)}">`).join('');
+        }
+    }
+
+    function renderDynamicFields() {
+        const op = document.getElementById('operation')?.value || 'loading';
+        const company = document.getElementById('company')?.value || '';
+        const isOwn = (company === "DC-Link");
+        const container = document.getElementById('dynamic-fields');
+        if (!container) return;
+        container.innerHTML = `
+            <div class="form-group"><label>ПІБ Водія *</label><input type="text" id="fio" placeholder="Виберіть або введіть ПІБ" required autocomplete="off"></div>
+            <div class="form-group"><label>Контактний телефон *</label><input type="tel" id="phone" placeholder="0991234567" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required autocomplete="off"></div>
+            <div class="form-group"><label>Марка авто *</label><input type="text" id="car_model" placeholder="Виберіть або введіть марку" required autocomplete="off"></div>
+            <div class="form-group"><label>Держ. номер авто *</label><input type="text" id="car_number" placeholder="Виберіть або введіть номер" required autocomplete="off"></div>
+        `;
+        if (op === 'loading') {
+            container.innerHTML += `<div class="form-group"><label>ТТН/ПН/ДОС *</label><input type="text" id="ttn" placeholder="Номер документа" required></div>`;
+        } else {
+            container.innerHTML += `
+                <div class="form-group"><label>ТТН/Маршрут *</label><input type="text" id="ttn" placeholder="Номер документа" required></div>
+                <div class="form-group"><label>Група товару *</label><select id="group"><option value="КБТ">КБТ</option><option value="СГТ">СГТ</option><option value="МГТ">МГТ</option><option value="Інше">Інше</option></select></div>
+                <div class="form-group"><label>Тип вантажу *</label><select id="type"><option value="Піддони">Піддони</option><option value="Насипом">Насипом</option></select></div>
+                <div class="form-group"><label>Об'єм (м³)</label><input type="number" id="volume" step="0.1" placeholder="Наприклад: 2.5"></div>
+            `;
+        }
+        const autoContainer = document.getElementById('auto-load-container');
+        if (autoContainer) autoContainer.style.display = (isOwn && op === 'loading') ? 'block' : 'none';
+		if (!isOwn || op !== 'loading') { const c = document.getElementById('route-inline-container'); if(c) c.style.display = 'none'; }
+		   if (isOwn) {
+				// Даємо 30мс, щоб інпути фізично з'явилися в DOM, і залізобетонно вішаємо підказки
+				setTimeout(() => {
+					applyDatalists();
+				}, 100);
+			} else {
+				// Якщо обрано іншого перевізника — прибираємо списки автозаповнення
+				['fio', 'car_model', 'car_number'].forEach(id => {
+					const el = document.getElementById(id);
+					if (el) el.removeAttribute('list');
+				});
+			}
+		}
+
+				window.openRouteModalDebug = async function() {
+				console.log("=== ТРИГЕР: Кнопку натиснуто, функція запустилася! ===");
+				
+				const container = document.getElementById('route-inline-container');
+				const listDiv = document.getElementById('routes-inline-list');
+				
+				if (!container || !listDiv) {
+					alert("Помилка: Контейнери для списку відсутні в HTML!");
+					return;
+				}
+
+				container.style.display = 'block';
+				listDiv.innerHTML = '<div style="padding:20px; text-align:center; color:#38bdf8;">Завантаження актуальних рейсів...</div>';
+
+				try {
+					const url = window.getApiUrl ? window.getApiUrl() : localStorage.getItem('apps_script_url');
+					if (!url) throw new Error("API URL відсутній");
+					
+					// Викликаємо твій точний logType з Apps Script
+					const resp = await fetch(`${url}?logType=own_logistic`);
+					const routes = await resp.json();
+					
+					if (!routes || !routes.length) { 
+						listDiv.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">🚫 Немає доступних маршрутів на сьогодні</div>'; 
+						return; 
+					}
+					
+					// Малюємо простору таблицю з твоїми точними ключами
+					let html = `<table style="width:100%; border-collapse:collapse; font-size:13px; color:#fff;">
+						<thead style="background:#1c2541; color:#38bdf8;">
+							<tr>
+								<th style="padding:10px; text-align:left; border-bottom:2px solid #3a506b;">Маршрут</th>
+								<th style="padding:10px; text-align:left; border-bottom:2px solid #3a506b;">Водій</th>
+								<th style="padding:10px; text-align:left; border-bottom:2px solid #3a506b;">Автомобіль</th>
+								<th style="padding:10px; text-align:left; border-bottom:2px solid #3a506b;">Час виїзду</th>
+								<th style="padding:10px; border-bottom:2px solid #3a506b;"></th>
+							</tr>
+						</thead>
+						<tbody>`;
+					
+					routes.forEach(r => {
+						html += `<tr style="border-bottom:1px solid #3a506b;">
+							<td style="padding:10px; font-weight:bold; color:#38bdf8;">${escapeHtml(r["Маршрут"])}</td>
+							<td style="padding:10px;">${escapeHtml(r["Водій"])}</td>
+							<td style="padding:10px;">${escapeHtml(r["Автомобіль"])}</td>
+							<td style="padding:10px; white-space:nowrap;">${escapeHtml(r["Час виїзду"])}</td>
+							<td style="padding:10px; text-align:right;">
+								<button type="button" class="select-route-btn" style="background:#10b981; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;" data-route='${JSON.stringify(r)}'>Вибрати</button>
+							</td>
+						</tr>`;
+					});
+					html += `</tbody></table>`;
+					listDiv.innerHTML = html;
+					
+					// Клік на кнопку вибору рядка
+					listDiv.querySelectorAll('.select-route-btn').forEach(btn => {
+						btn.addEventListener('click', function() {
+							const route = JSON.parse(this.dataset.route);
+							
+							if (document.getElementById('fio')) document.getElementById('fio').value = route["Водій"] || '';
+							if (document.getElementById('ttn')) document.getElementById('ttn').value = route["Маршрут"] || '';
+							
+							// Розбиваємо "Автомобіль" (Марка + Номер) назад на два твоїх окремих поля
+							const fullCar = route["Автомобіль"];
+							if (fullCar && fullCar.includes(" ")) {
+								const lastSpaceIdx = fullCar.lastIndexOf(" ");
+								if (document.getElementById('car_model')) document.getElementById('car_model').value = fullCar.substring(0, lastSpaceIdx).trim();
+								if (document.getElementById('car_number')) document.getElementById('car_number').value = fullCar.substring(lastSpaceIdx + 1).trim();
+							} else {
+								if (document.getElementById('car_model')) document.getElementById('car_model').value = fullCar || '';
+								if (document.getElementById('car_number')) document.getElementById('car_number').value = '';
+							}
+							
+							// Ховаємо блок після вибору
+							container.style.display = 'none';
+							
+							if (typeof showMessage === 'function') {
+								showMessage(`Обрано маршрут ${route["Маршрут"]}`, "success");
+							}
+						});
+					});
+				} catch(e) {
+					console.error(e);
+					listDiv.innerHTML = `<div style="color:#ef4444; text-align:center; padding:20px;">Помилка завантаження: ${e.message}</div>`;
+				}
+			}
+
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+
+    async function handleSubmit() {
+        const company = document.getElementById('company')?.value;
+        if (!company) { showMessage("Оберіть постачальника", "error"); return; }
+        const fio = document.getElementById('fio')?.value;
+        const phone = document.getElementById('phone')?.value;
+        const carModel = document.getElementById('car_model')?.value;
+        const carNumber = document.getElementById('car_number')?.value;
+        const ttn = document.getElementById('ttn')?.value;
+        const op = document.getElementById('operation')?.value;
+        if (!fio || !carModel || !carNumber || !ttn) { showMessage("Заповніть усі обов'язкові поля", "error"); return; }
+        if (op !== 'loading' && !phone) { showMessage("Заповніть телефон", "error"); return; }
+        if (phone.length < 10) {  showMessage("Некоректний номер телефону! (наприклад: 0991234567)", "error"); return; }
+
+        const apiUrl = window.getApiUrl ? window.getApiUrl() : localStorage.getItem('apps_script_url');
+        if (!apiUrl) { showMessage("API не налаштовано", "error"); return; }
+        const url = new URL(apiUrl);
+        url.searchParams.append('action', 'reg_auto');
+        url.searchParams.append('operation', op);
+        url.searchParams.append('company', company);
+        url.searchParams.append('fio', fio);
+        url.searchParams.append('phone', phone || '');
+        url.searchParams.append('car', `${carModel} ${carNumber}`);
+        url.searchParams.append('ttn', ttn);
+        if (op !== 'loading') {
+            url.searchParams.append('group', document.getElementById('group')?.value || '');
+            url.searchParams.append('type', document.getElementById('type')?.value || '');
+            url.searchParams.append('volume', document.getElementById('volume')?.value || '');
+        } else {
+            url.searchParams.append('group', '');
+            url.searchParams.append('type', '');
+            url.searchParams.append('volume', '');
+        }
+
+        const btn = document.getElementById('submit-action');
+        if (btn) btn.disabled = true;
+        if (btn) btn.innerText = "Відправка...";
+        try {
+            const resp = await fetch(url.toString());
+            const result = await resp.json();
+            if (result.status === "success") {
+                const unloadSpan = document.getElementById('unload-id');
+                if (op === 'unloading' && unloadSpan) unloadSpan.innerHTML = `Номер заявки: ${result.id}`;
+                else if (unloadSpan) unloadSpan.innerHTML = '';
+                const formDiv = document.getElementById('form-content');
+                const resultDiv = document.getElementById('result-card');
+                if (formDiv) formDiv.style.display = 'none';
+                if (resultDiv) resultDiv.style.display = 'block';
+            } else throw new Error(result.message);
+        } catch(e) { showMessage("Помилка: " + e.message, "error"); }
+        finally { if (btn) { btn.disabled = false; btn.innerText = "ЗАРЕЄСТРУВАТИ"; } }
+    }
+
+    function resetForm() {
+        const formDiv = document.getElementById('form-content');
+        const resultDiv = document.getElementById('result-card');
+        if (formDiv) formDiv.style.display = 'block';
+        if (resultDiv) resultDiv.style.display = 'none';
+        const fields = ['company', 'fio', 'phone', 'car_model', 'car_number', 'ttn'];
+        fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        const group = document.getElementById('group'); if (group) group.value = 'КБТ';
+        const type = document.getElementById('type'); if (type) type.value = 'Піддони';
+        const volume = document.getElementById('volume'); if (volume) volume.value = '';
+        renderDynamicFields();
+    }
+
+    async function init() {
+        await loadSuppliers(false);
+        await loadDrivers();
+        renderDynamicFields();
+
+        const toggle = document.getElementById('toggle-group');
+        if (toggle) {
+            const btns = toggle.querySelectorAll('.toggle-btn');
+            const opInput = document.getElementById('operation');
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (opInput) opInput.value = btn.dataset.op;
+                    renderDynamicFields();
+                });
+            });
+            const defaultBtn = toggle.querySelector('.toggle-btn[data-op="loading"]');
+            if (defaultBtn) defaultBtn.classList.add('active');
+            if (opInput) opInput.value = 'loading';
+        }
+
+        const refreshBtn = document.getElementById('refreshSuppliersBtn');
+        if (refreshBtn) refreshBtn.addEventListener('click', () => loadSuppliers(true));
+
+        const companyInput = document.getElementById('company');
+        if (companyInput) {
+            companyInput.addEventListener('change', renderDynamicFields);
+            companyInput.addEventListener('input', renderDynamicFields);
+        }
+
+        const autoLoadBtn = document.getElementById('auto-load-btn');
+			if (autoLoadBtn) {
+				autoLoadBtn.addEventListener('click', window.openRouteModalDebug);
+			}
+
+        const submitBtn = document.getElementById('submit-action');
+        if (submitBtn) submitBtn.addEventListener('click', handleSubmit);
+
+        const newRegBtn = document.getElementById('new-reg-btn');
+        if (newRegBtn) newRegBtn.addEventListener('click', resetForm);
+
+        const backMenu = document.getElementById('back-to-menu');
+        if (backMenu) backMenu.addEventListener('click', () => window.location.href = 'index.html');
+
+        const backResult = document.getElementById('back-to-menu-result');
+        if (backResult) backResult.addEventListener('click', () => window.location.href = 'index.html');
+
+          window.addEventListener('click', (e) => {
+            const modal = document.getElementById('route-modal');
+            if (modal && e.target === modal) modal.style.display = 'none';
+        });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+})();
 </script>
 </body>
 </html>
